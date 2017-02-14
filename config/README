@@ -1,0 +1,5 @@
+# README
+# {projectRoot}/config directory is used to hold files expected of 3rd party libaries
+# and those libraries look in config by default.
+# this avoids having to find a hook in the library for telling it where to look, assuming it even has such a hook.
+#

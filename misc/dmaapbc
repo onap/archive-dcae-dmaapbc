@@ -1,0 +1,151 @@
+#!/bin/bash
+
+umask 0022
+TZ=GMT0
+COMPONENT=dmaapbc
+APP_ROOT=/opt/app/$COMPONENT
+USER=root
+export TZ
+PATH=/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/opt/java/jdk/jdk180/bin
+export PATH
+CLASSPATH=`echo $APP_ROOT/etc $APP_ROOT/lib/*.jar | tr ' ' ':'` 
+export CLASSPATH
+CONTAINER_CONFIG=/opt/app/config/conf
+MAIN=org.openecomp.dmaapbc.server.Main 
+
+
+pids() {
+	#set -x
+	ps -ef | grep java | grep $MAIN | sed -e 's/[^ ]* *//' -e 's/ .*//'
+	#set +x
+}
+
+config() {
+	set -x
+	if [ ! -d $APP_ROOT ]
+	then
+		echo "Expected app root directory $APP_ROOT does not exist"
+		exit 1
+	fi
+	if [ !  -f $CONTAINER_CONFIG ]
+	then
+		echo "Expected env file $CONTAINER_CONFIG not found"
+		exit 1
+	fi
+	cd $APP_ROOT
+	source $CONTAINER_CONFIG
+	. misc/dmaapbc.properties.tmpl > etc/dmaapbc.properties
+    . misc/PolicyEngineApi.properties.tmpl > config/PolicyEngineApi.properties
+	set +x
+}
+
+start() {
+	set -x
+	ID=`id -n -u`
+	GRP=`id -n -g`
+	if [ "$ID" != "$USER" ]
+	then
+		echo $COMPONENT must be started as user $USER not $ID
+		exit 1
+	fi
+	if [ "$GRP" != "$USER" ]
+	then
+		echo $COMPONENT must be started as group $USER not $GRP
+		exit 1
+	fi
+	cd $APP_ROOT
+
+# disable until we use certs
+#	if etc/havecert
+#	then
+		echo >/dev/null
+#	else
+#		echo No certificate file available.  Cannot start
+#		exit 0
+#	fi
+	PIDS=`pids`
+	if [ "$PIDS" != "" ]
+	then
+		echo $COMPONENT already running
+		exit 0
+	fi
+	rm -f $APP_ROOT/etc/SHUTDOWN
+
+	# JVM flags
+#old line from Dockerfile...keep for reference only
+	FLAGS="-cp etc:lib/* -Dlog4j.configuration=etc/log4j.properties -Ddmaapbc.properties=etc/dmaapbc.properties  -Dhttps.protocols=TLSv1.2 -Dhttps.cipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
+	nohup java $FLAGS $MAIN </dev/null >/dev/null 2>&1 &
+	sleep 5
+	PIDS=`pids`
+	if [ "$PIDS" = "" ]
+	then
+		echo $COMPONENT startup failed
+		tail -100 $APP_ROOT/logs/dmaap*.log
+	else
+		echo $COMPONENT started
+	fi
+	set +x
+}
+
+stop() {
+	ID=`id -n -u`
+	GRP=`id -n -g`
+	if [ "$ID" != "$USER" ]
+	then
+		echo $COMPONENT must be stopped as user $USER not $ID
+		exit 1
+	fi
+	if [ "$GRP" != "$USER" ]
+	then
+		echo $COMPONENT must be stopped as group $USER not $GRP
+		exit 1
+	fi
+	touch $APP_ROOT/etc/SHUTDOWN
+	PIDS=`pids`
+	if [ "$PIDS" != "" ]
+	then
+		sleep 5
+		kill -9 $PIDS
+		sleep 5
+		echo $COMPONENT stopped
+	else
+		echo $COMPONENT not running
+	fi
+}
+
+status() {
+	PIDS=`pids`
+	if [ "$PIDS" != "" ]
+	then
+		echo $COMPONENT running
+	else
+		echo $COMPONENT not running
+	fi
+}
+
+case "$1" in
+'deploy')
+	config
+	start
+	wait
+	;;
+'start')
+	start
+	;;
+'stop')
+	stop
+	;;
+'restart')
+	stop
+	sleep 20
+	start
+	;;
+'status')
+	status
+	;;
+*)
+	echo "Usage: $0 { start | stop | restart }"
+	exit 1
+	;;
+esac
+exit 0

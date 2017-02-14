@@ -1,0 +1,26 @@
+# ignore all bin directories
+# matches "bin" in any subfolder
+bin/
+
+# ignore all target directories
+target/
+
+# ignore logs that might be laying around
+logs/
+
+# ignore laptop eclipse settings
+.settings/
+localEclipse/
+
+# ignore local targets
+dmaapbc.jar
+repository/
+misc/dmaapbc_init.dat
+
+# ignore package tmp dirs
+stage/
+tmp/
+
+# ignore blackduck files
+*.jsonld
+

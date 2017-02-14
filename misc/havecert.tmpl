@@ -1,0 +1,11 @@
+#!/bin/bash
+cat <<!EOF
+TZ=GMT0
+cd /opt/app/dmaapbc;
+if [ -f ${DMAAPBC_KSTOREFILE:-etc/keystore} ]
+then
+	exit 0
+fi
+echo `date '+%F %T,000'` WARN Certificate file "${DMAAPBC_KSTOREFILE:-etc/keystore}" is missing >>${DMAAPBC_LOGS:-logs}/dmaapbc.log
+exit 1
+!EOF

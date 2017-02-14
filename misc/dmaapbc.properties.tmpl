@@ -1,0 +1,152 @@
+cat <<!EOF
+#
+#	Configuration parameters fixed at startup for the DMaaP Bus Controller
+#
+#
+#	URI to retrieve dynamic DR configuration
+#
+ProvisioningURI:	${DMAAPBC_INTURI:-/internal/prov}
+#
+#	Allow http access to API 
+#
+HttpAllowed:	${DMAAPBC_HTTPALLOWED:-true}
+#
+#	The port number for http as seen within the server
+#
+IntHttpPort:	${DMAAPBC_INT_HTTP_PORT:-8080}
+#
+#	The port number for https as seen within the server
+#   Set to 0 if no certificate is available yet...
+#
+IntHttpsPort:	${DMAAPBC_INT_HTTPS_PORT:-8443}
+#
+#	The external port number for https taking port mapping into account
+#
+ExtHttpsPort:	${DMAAPBC_EXT_HTTPS_PORT:-443}
+#
+#	The type of keystore for https
+#
+KeyStoreType:	jks
+#
+#	The path to the keystore for https
+#
+KeyStoreFile:	${DMAAPBC_KSTOREFILE:-etc/keystore}
+#
+#	The password for the https keystore
+#
+KeyStorePassword:	${DMAAPBC_KSTOREPASS:-changeit}
+#
+#	The password for the private key in the https keystore
+#
+KeyPassword:	${DMAAPBC_PVTKEYPASS:-changeit}
+#
+#	The type of truststore for https
+#
+TrustStoreType:	jks
+#
+#	The path to the truststore for https
+#
+TrustStoreFile:	${DMAAPBC_TSTOREFILE}
+#
+#	The password for the https truststore
+#
+TrustStorePassword:	${DMAAPBC_TSTOREPASS:-changeit}
+#
+#	The path to the file used to trigger an orderly shutdown
+#
+QuiesceFile:	etc/SHUTDOWN
+#
+#	Enable postgress
+#
+UsePGSQL:	${DMAAPBC_PG_ENABLED:-true}
+#
+#	The host for postgres access
+#
+DB.host:	${DMAAPBC_PGHOST:-HostNotSet}
+#
+#	For postgres access
+#
+DB.cred:	${DMAAPBC_PGCRED:-ValueNotSet}
+#
+#	Name of this environment
+#
+DmaapName:	${DMAAPBC_INSTANCE_NAME:-FTLIST}
+#
+#	Name of DR prov server
+#
+DR.provhost:	${DMAAPBC_DRPROV_FQDN:-dcae-drps.domain.notset.com}
+#
+#	The Role and credentials of the MirrorMaker Provisioner.  This is used by DMaaP Bus Controller to pub to the provisioning topic
+#   Not part of 1701
+#
+#MM.ProvRole: ${DMAAPBC_MMPROV_ROLE:-org.openecomp.dmaapBC.MMprov.prov}
+#MM.ProvUserMechId: ${DMAAPBC_MMPROV_ID:-idNotSet@namespaceNotSet}
+#MM.ProvUserPwd: ${DMAAPBC_MMPROV_PWD:-enc:fMxh-hzYZldbtyXumQq9aJU08SslhbM6mXtt}
+#
+#	The Role of the MirrorMaker Agent. This is used by MM to sub to provisioning topic
+#
+MM.AgentRole: ${DMAAPBC_MMAGENT_ROLE:-org.openecomp.dmaapBC.MMagent.agent}
+#################
+# AAF Properties:
+#
+# regarding password encryption:
+# In the dependencies that Maven retrieves (e.g., under dcae_dmaapbc/target/deps/ is a jar file cadi-core-version.jar.  Generate the key file with:
+#
+# java \u2013jar wherever/cadi-core-*.jar keygen keyfilename
+# chmod 400 keyfilename
+#
+# To encrypt a key:
+#
+# java \u2013jar wherever/cadi-core-*.jar digest password-to-encrypt keyfilename
+#
+# This will generate a string.  Put \u201Cenc:\u201D on the front of the string, and put the result in this properties file.
+#
+# Location of the Codec Keyfile which is used to decrypt passwords in this properties file before they are passed to AAF
+#
+# REF: https://wiki.domain.notset.com/display/cadi/CADI+Deployment
+#
+CredentialCodecKeyfile:	${DMAAPBC_CODEC_KEYFILE:-etc/LocalKey}
+#
+# URL of AAF environment to use.
+#
+aaf.URL:	${DMAAPBC_AAF_URL:-https://authentication.simpledemo.openecomp.org:8095/proxy/}
+#
+# TopicMgr mechid@namespace
+#
+aaf.TopicMgrUser:	${DMAAPBC_TOPICMGR_USER:-idNotSet@namespaceNotSet}
+#
+# TopicMgr password
+# 
+aaf.TopicMgrPassword:	${DMAAPBC_TOPICMGR_PWD:-enc:zyRL9zbI0py3rJAjMS0dFOnYfEw_mJhO}
+#
+# Bus Controller Namespace Admin  mechid@namespace
+#
+aaf.AdminUser:	${DMAAPBC_ADMIN_USER:-idNotSet@namespaceNotSet}
+#
+# Bus Controller Namespace Admin password
+#
+aaf.AdminPassword:	${DMAAPBC_ADMIN_PWD:-enc:YEaHwOJrwhDY8a6usetlhbB9mEjUq9m}
+#
+# endof AAF Properties
+#################
+#################
+# PolicyEngine Properties
+#
+# Flag to turn on/off Authentication
+UsePE: ${DMAAPBC_PE_ENABLED:-false}
+#
+# Argument to decisionAttributes.put("AAF_ENVIRONMENT", X); 
+# where X is:  TEST= UAT, PROD = PROD, DEVL = TEST
+#
+PeAafEnvironment: ${DMAAPBC_PE_AAF_ENV:-DEVL}
+#
+# Name of PolicyEngineApi properties file
+PolicyEngineProperties: config/PolicyEngineApi.properties
+#
+# Namespace for URI values for API used to create AAF permissions
+# e.g. if ApiNamespace is X.Y..dmaapBC.api then for URI /topics we create an AAF perm X.Y..dmaapBC.api.topics
+ApiNamespace: org.openecomp.dmaapBC.api
+#
+# endof PolicyEngineProperties
+#################
+!EOF

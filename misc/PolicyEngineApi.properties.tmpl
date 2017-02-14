@@ -1,0 +1,14 @@
+cat <<!EOF
+#PDP URLs to which will be used by the Policy Engine API to take Decisions. There are multiple to support redundancy.
+#Format: PDP_URL{PriorityNumber} = URL, id, password.
+PDP_URL1 =  ${DMAAPBC_PDP1_URL:-https://host1.domain.notset.com:8081/pdp/} , ${DMAAPBC_PDP1_USER:-testpdp} , ${DMAAPBC_PDP1_PWD:-alpha123}
+PDP_URL2 =  ${DMAAPBC_PDP2_URL:-https://host2.domain.notset.com:8082/pdp/} , ${DMAAPBC_PDP2_USER:-testpdp} , ${DMAAPBC_PDP2_PWD:-alpha456}
+PAP_URL =   ${DMAAPBC_PAP_URL:-https://host3.domain.notset.com:9091/pap/}  , ${DMAAPBC_PAP_USER:-testpap} , ${DMAAPBC_PAP_PWD:-alpha123}
+
+
+
+CLIENT_ID=${DMAAPBC_TOPICMGR_USER:-mechIdNotSet@namespaceNotSet}
+ENVIRONMENT=${DMAAPBC_PE_AAF_ENV:-DEVL}
+
+
+!EOF

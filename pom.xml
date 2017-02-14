@@ -1,0 +1,274 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.openecomp.dcae.dmaapbc</groupId>
+    <artifactId>dcae_dmaapbc</artifactId>
+    <version>1.0.0</version>
+    <name>dcae_dmaapbc</name>
+
+		<distributionManagement>
+			<repository>
+				<id>osecomp-nexus-releases</id>
+				<name>OSECOMP Release Repository</name>
+				<url>https://162.242.254.138:8443/repository/maven-releases</url>
+			</repository>
+			<snapshotRepository>
+				<id>osecomp-nexus-snapshots</id>
+				<name>OSECOMP Snapshot Repository</name>
+				<url>https://162.242.254.138:8443/repository/maven-snapshots</url>
+		   </snapshotRepository>
+              <site>
+                 <id>mso-javadoc</id>
+                 <url>dav:https://ecomp-nexus:8443/repository/mso-javadoc/org.openecomp.dmaapbc/${project.version}</url>
+               </site>
+
+		</distributionManagement>
+      <pluginRepositories>
+                <pluginRepository>
+                        <id>osecomp-nexus</id>
+                        <name>OSECOMP Repository</name>
+                        <url>https://162.242.254.138:8443/maven-central</url>
+                </pluginRepository>
+        </pluginRepositories>
+    <build>
+        <finalName>dcae_dmaapbc</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.5.1</version>
+                <inherited>true</inherited>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>2.10</version>
+            <executions>
+                <execution>
+                    <id>copy-dependencies</id>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>copy-dependencies</goal>
+                    </goals>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/deps</outputDirectory>
+                    <overWriteReleases>false</overWriteReleases>
+                    <overWriteSnapshots>false</overWriteSnapshots>
+                    <overWriteIfNewer>true</overWriteIfNewer>
+                </configuration>
+                </execution>
+            </executions>
+        </plugin>
+		 <!-- blackduck maven plugin -->
+		<plugin>
+		 <groupId>com.blackducksoftware.integration</groupId>
+		 <artifactId>hub-maven-plugin</artifactId>
+		 <version>1.0.4</version>
+		 <inherited>false</inherited>
+		 <configuration>
+		  <target>${project.basedir}</target>
+		 </configuration>
+		 <executions>
+		  <execution>
+		   <id>create-bdio-file</id>
+		   <phase>package</phase>
+		   <goals>
+			<goal>createHubOutput</goal>
+		   </goals>
+		  </execution>
+		 </executions>
+		</plugin>
+            <!-- license plugin -->         
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>1.10</version>
+                <configuration>
+                    <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+                    <processStartTag>============LICENSE_START=======================================================</processStartTag>
+                    <processEndTag>============LICENSE_END=========================================================</processEndTag>
+                    <sectionDelimiter>================================================================================</sectionDelimiter>
+                    <licenseName>apache_v2</licenseName>
+                    <inceptionYear>2017</inceptionYear>
+                    <organizationName>AT&amp;T Intellectual Property. All rights reserved.</organizationName>
+                    <projectName>OpenECOMP - org.openecomp.dmaapbc</projectName>
+                    <canUpdateCopyright>true</canUpdateCopyright>
+                    <canUpdateDescription>true</canUpdateDescription>
+                    <canUpdateLicense>true</canUpdateLicense>
+                    <emptyLineAfterHeader>true</emptyLineAfterHeader>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>first</id>
+                        <goals>
+                            <goal>update-file-header</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+             <groupId>org.codehaus.mojo</groupId>
+             <artifactId>sonar-maven-plugin</artifactId>
+             <version>3.2</version>
+            </plugin>
+				<plugin>
+				  <groupId>org.apache.maven.plugins</groupId>
+				  <artifactId>maven-site-plugin</artifactId>
+				  <version>3.6</version>
+				  <dependencies>
+					<dependency>
+					  <groupId>org.apache.maven.wagon</groupId>
+					  <artifactId>wagon-webdav-jackrabbit</artifactId>
+					  <version>2.10</version>
+					</dependency>
+				  </dependencies>
+				</plugin>
+        </plugins>
+        <pluginManagement>
+        	<plugins>
+        		<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        		<plugin>
+        			<groupId>org.eclipse.m2e</groupId>
+        			<artifactId>lifecycle-mapping</artifactId>
+        			<version>1.0.0</version>
+        			<configuration>
+        				<lifecycleMappingMetadata>
+        					<pluginExecutions>
+        						<pluginExecution>
+        							<pluginExecutionFilter>
+        								<groupId>
+        									org.apache.maven.plugins
+        								</groupId>
+        								<artifactId>
+        									maven-dependency-plugin
+        								</artifactId>
+        								<versionRange>
+        									[2.10,)
+        								</versionRange>
+        								<goals>
+        									<goal>
+        										copy-dependencies
+        									</goal>
+        								</goals>
+        							</pluginExecutionFilter>
+        							<action>
+        								<ignore></ignore>
+        							</action>
+        						</pluginExecution>
+        					</pluginExecutions>
+        				</lifecycleMappingMetadata>
+        			</configuration>
+        		</plugin>
+        	</plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.glassfish.jersey</groupId>
+                <artifactId>jersey-bom</artifactId>
+                <version>${jersey.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet-core</artifactId>
+            <!-- use the following artifactId if you don't need servlet 2.x compatibility -->
+            <!-- artifactId>jersey-container-servlet</artifactId -->
+        </dependency>    
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-moxy</artifactId>
+        </dependency>
+ 		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+        <dependency>
+        	<groupId>org.eclipse.jetty</groupId>
+        	<artifactId>jetty-server</artifactId>
+        	<version>${jettyVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>${jettyVersion}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlets</artifactId>
+            <version>${jettyVersion}</version>
+            <scope>compile</scope>
+         </dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
+		<dependency>
+			<groupId>com.googlecode.json-simple</groupId>
+			<artifactId>json-simple</artifactId>
+			<version>1.1.1</version>
+		</dependency>
+     
+          <dependency>
+      		<groupId>commons-codec</groupId>
+      		<artifactId>commons-codec</artifactId>
+     		 <version>1.6</version>
+    	</dependency>
+    	<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+		<dependency>
+    		<groupId>org.postgresql</groupId>
+        	<artifactId>postgresql</artifactId>
+            <version>9.4.1208.jre7</version>
+        </dependency>
+
+
+    
+    </dependencies>
+     <repositories>
+	 <repository>
+         <id>osecomp-nexus</id>
+         <name>OSECOMP Repository</name>
+         <url>https://162.242.254.138:8443/maven-central</url>
+     </repository>
+ </repositories>
+<reporting>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-javadoc-plugin</artifactId>
+      <version>2.10.4</version>
+      <configuration>
+        <failOnError>false</failOnError>
+        <doclet>org.umlgraph.doclet.UmlGraphDoc</doclet>
+        <docletArtifact>
+          <groupId>org.umlgraph</groupId>
+          <artifactId>umlgraph</artifactId>
+          <version>5.6</version>
+        </docletArtifact>
+        <additionalparam>-views</additionalparam>
+        <useStandardDocletOptions>true</useStandardDocletOptions>
+      </configuration>
+    </plugin>
+  </plugins>
+</reporting>
+    <properties>
+        <jersey.version>2.16</jersey.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jettyVersion>9.0.2.v20130417</jettyVersion>
+    </properties>
+    <description>Data Movement as a Platform (DMaaP) Bus Controller provides an API for other DCAE infrastructure components to provision DMaaP resources.  A DMaaP resource is a Data Router Feed or a Message Router Topic, and their associated publishers and subscribers.</description>
+</project>
