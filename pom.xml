@@ -10,14 +10,14 @@
 
 		<distributionManagement>
 			<repository>
-				<id>osecomp-nexus-releases</id>
-				<name>OSECOMP Release Repository</name>
-				<url>https://162.242.254.138:8443/repository/maven-releases</url>
+				<id>ecomp-releases</id>
+				<name>Open eCOMP Release Repository</name>
+				<url>${nexusproxy}/content/repositories/releases/</url>
 			</repository>
 			<snapshotRepository>
-				<id>osecomp-nexus-snapshots</id>
-				<name>OSECOMP Snapshot Repository</name>
-				<url>https://162.242.254.138:8443/repository/maven-snapshots</url>
+				<id>ecomp-snapshots</id>
+				<name>Open eCOMP Snapshot Repository</name>
+				<url>${nexusproxy}/content/repositories/snapshots/</url>
 		   </snapshotRepository>
               <site>
                  <id>mso-javadoc</id>
@@ -25,13 +25,13 @@
                </site>
 
 		</distributionManagement>
-      <pluginRepositories>
+      <!--pluginRepositories>
                 <pluginRepository>
                         <id>osecomp-nexus</id>
                         <name>OSECOMP Repository</name>
                         <url>https://162.242.254.138:8443/maven-central</url>
                 </pluginRepository>
-        </pluginRepositories>
+        </pluginRepositories-->
     <build>
         <finalName>dcae_dmaapbc</finalName>
         <plugins>
@@ -66,7 +66,7 @@
             </executions>
         </plugin>
 		 <!-- blackduck maven plugin -->
-		<plugin>
+		<!--plugin>
 		 <groupId>com.blackducksoftware.integration</groupId>
 		 <artifactId>hub-maven-plugin</artifactId>
 		 <version>1.0.4</version>
@@ -83,7 +83,7 @@
 		   </goals>
 		  </execution>
 		 </executions>
-		</plugin>
+		</plugin-->
             <!-- license plugin -->         
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -240,9 +240,9 @@
     </dependencies>
      <repositories>
 	 <repository>
-         <id>osecomp-nexus</id>
-         <name>OSECOMP Repository</name>
-         <url>https://162.242.254.138:8443/maven-central</url>
+         <id>ecomp-releases</id>
+         <name>Open eCOMP Release Repository</name>
+         <url>${nexusproxy}/content/repositories/releases/</url>
      </repository>
  </repositories>
 <reporting>
