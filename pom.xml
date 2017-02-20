@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.openecomp.dcae.dmaapbc</groupId>
   <artifactId>dcae_dmaapbc</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.0-SNAPSHOT</version>
   <name>dcae_dmaapbc</name>
   <distributionManagement>
     <repository>
