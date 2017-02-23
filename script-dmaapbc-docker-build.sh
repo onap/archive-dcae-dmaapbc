@@ -23,8 +23,14 @@ else
 fi
 
 
-IMAGE='dcae_dmaapbc'
-TAG='1.0.0'
+IMAGE='openecomp/dcae_dmaapbc'
+VERSION=$(xpath -e "//project/version/text()" "pom.xml")
+EXT=$(echo "$VERSION" | rev | cut -f1 -d'-' | rev)
+if [ "$EXT" == "SNAPSHOT" ]; then
+    VERSION=$(echo "$VERSION" | rev | cut -f2- -d'-' | rev)
+fi
+TIMESTAMP=$(date +%C%y%m%dT%H%M%S)
+TAG="$VERSION-$TIMESTAMP"
 LFQI="${IMAGE}:${TAG}"
 BUILD_PATH="${WORKSPACE}"
 
@@ -43,6 +49,12 @@ fi
 # snapshot registry                   nexus3.openecomp.org:10003"
 REPO='nexus3.openecomp.org:10003'
 RFQI="${REPO}/${LFQI}"
-docker tag ${LFQI} ${RFQI}
-docker push ${RFQI}
+docker tag "${LFQI}" "${RFQI}"
+docker push "${RFQI}"
+
+TAG="latest"
+LFQI="${IMAGE}:${TAG}"
+RFQI2="${REPO}/${LFQI}"
+docker tag "${RFQI}" "${RFQI2}"
+docker push "${RFQI2}"
 
