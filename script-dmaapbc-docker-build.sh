@@ -25,9 +25,11 @@ fi
 
 IMAGE='openecomp/dcae_dmaapbc'
 VERSION=$(xpath -e '//project/version/text()' 'pom.xml')
+echo "$VERSION"
 EXT=$(echo "$VERSION" | rev | cut -s -f1 -d'-' | rev)
 if [ -z "$EXT" ]; then
-    VERSION=$(echo "${VERSION}-STAGING")
+    VERSION="${VERSION}-STAGING"
+    echo "$VERSION"
 fi
 TIMESTAMP=$(date +%C%y%m%dT%H%M%S)
 echo $VERSION
