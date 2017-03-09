@@ -30,7 +30,9 @@ if [ -z "$EXT" ]; then
     VERSION=$(echo "${VERSION}-STAGING")
 fi
 TIMESTAMP=$(date +%C%y%m%dT%H%M%S)
-TAG="$VERSION-$TIMESTAMP"
+echo $VERSION
+echo $TIMESTAMP
+TAG="${VERSION}-${TIMESTAMP}"
 LFQI="${IMAGE}:${TAG}"
 BUILD_PATH="${WORKSPACE}"
 
