@@ -54,7 +54,7 @@ echo "$RFQI"
 docker tag "${LFQI}" "${RFQI}"
 docker push "${RFQI}"
 
-TAG="LATEST"
+TAG="latest"
 LFQI="${IMAGE}:${TAG}"
 RFQI2="${REPO}/${LFQI}"
 echo "$LFQI"
