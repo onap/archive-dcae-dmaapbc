@@ -24,7 +24,7 @@ fi
 
 
 IMAGE='openecomp/dcae_dmaapbc'
-VERSION=$(xpath -e "//project/version/text()" "pom.xml")
+VERSION=$(xpath -e '//project/version/text()' 'pom.xml')
 EXT=$(echo "$VERSION" | rev | cut -s -f1 -d'-' | rev)
 if [ -z "$EXT" ]; then
     VERSION=$(echo "${VERSION}-STAGING")
