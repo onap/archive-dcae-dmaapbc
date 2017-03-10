@@ -23,7 +23,7 @@ else
 fi
 
 
-IMAGE='openecomp/dcae_dmaapbc'
+IMAGE='openecomp/dcae-dmaapbc'
 VERSION=$(xpath -e '//project/version/text()' 'pom.xml')
 echo "$VERSION"
 VERSION=$(echo $VERSION |sed 's/\"//')
