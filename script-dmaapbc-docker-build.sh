@@ -41,9 +41,9 @@ IMAGE='openecomp/dcae-dmaapbc'
 VERSION="${VERSION//[^0-9.]/}"
 VERSION2=$(echo "$VERSION" | cut -f1-2 -d'.')
 
-TIMESTAMP=$(date +%C%y%m%dT%H%M%S)
+TIMESTAMP="-$(date +%C%y%m%dT%H%M%S)"
 LFQI="${IMAGE}:${VERSION}${TIMESTAMP}"
-BUILD_PATH="${WORKSPACE}/target/stage"
+BUILD_PATH="${WORKSPACE}"
 # build a docker image
 docker build --rm -f "${WORKSPACE}"/Dockerfile -t "${LFQI}" "${BUILD_PATH}"
 
