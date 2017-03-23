@@ -8,36 +8,42 @@
 # !!! make sure the yaml file include docker-login as a builder before calling
 # this script
 
-if [ "$#" != "1" ]; then
-    phase="verify"
-else
-    phase="$1"
-    case $phase in
-        verify|merge|release)
-            echo "Running $phase job"
-        ;;
-        *)
-            echo "Unknown phase $phase"
-            exit 1
-    esac
+phase=$1
+
+VERSION=$(xpath -e '//project/version/text()' 'pom.xml')
+VERSION=${VERSION//\"/}
+EXT=$(echo "$VERSION" | rev | cut -s -f1 -d'-' | rev)
+if [ -z "$EXT" ]; then
+  EXT="STAGING"
 fi
+case $phase in 
+  verify|merge)
+    if [ "$EXT" != 'SNAPSHOT' ]; then
+      echo "$phase job only takes SNAPSHOT version, got \"$EXT\" instead"
+      exit 1
+    fi 
+    ;;
+  release)
+    if [ ! -z "$EXT" ] && [ "$EXT" != 'STAGING' ]; then
+      echo "$phase job only takes STAGING or pure numerical version, got \"$EXT\" instead"
+      exit 1
+    fi
+    ;; 
+  *)
+    echo "Unknown phase \"$phase\""
+    exit 1
+esac
+echo "Running \"$phase\" job for version \"$VERSION\""
+
 
 
 IMAGE='openecomp/dcae-dmaapbc'
-VERSION=$(xpath -e '//project/version/text()' 'pom.xml')
-echo "$VERSION"
-VERSION=$(echo $VERSION |sed 's/\"//')
-EXT=$(echo "$VERSION" | rev | cut -s -f1 -d'-' | rev)
-if [ -z "$EXT" ]; then
-    VERSION="${VERSION}-STAGING"
-fi
-TIMESTAMP=$(date +%C%y%m%dT%H%M%S)
-echo $VERSION
-echo $TIMESTAMP
-TAG="${VERSION}-${TIMESTAMP}"
-LFQI="${IMAGE}:${TAG}"
-BUILD_PATH="${WORKSPACE}"
+VERSION="${VERSION//[^0-9.]/}"
+VERSION2=$(echo "$VERSION" | cut -f1-2 -d'.')
 
+TIMESTAMP=$(date +%C%y%m%dT%H%M%S)
+LFQI="${IMAGE}:${VERSION}${TIMESTAMP}"
+BUILD_PATH="${WORKSPACE}/target/stage"
 # build a docker image
 docker build --rm -f "${WORKSPACE}"/Dockerfile -t "${LFQI}" "${BUILD_PATH}"
 
@@ -51,18 +57,37 @@ fi
 # io registry  DOCKER_REPOSITORIES="nexus3.openecomp.org:10001 \
 # release registry                   nexus3.openecomp.org:10002 \
 # snapshot registry                   nexus3.openecomp.org:10003"
-REPO='nexus3.openecomp.org:10003'
-RFQI="${REPO}/${LFQI}"
-echo "$LFQI"
-echo "$RFQI"
-docker tag "${LFQI}" "${RFQI}"
-docker push "${RFQI}"
+# staging registry                   nexus3.openecomp.org:10004"
+case $EXT in
+SNAPSHOT|snapshot)
+    REPO='nexus3.openecomp.org:10003'
+    EXT="-SNAPSHOT"
+    ;;
+STAGING|staging)
+    REPO='nexus3.openecomp.org:10003'
+    #REPO='nexus3.openecomp.org:10004'
+    EXT="-STAGING"
+    ;;
+"")
+    REPO='nexus3.openecomp.org:10002'
+    EXT=""
+    echo "version has no extension, intended for release, in \"$phase\" phase. donot do release here"
+    exit 1
+    ;;
+*)
+    echo "Unknown extension \"$EXT\" in version"
+    exit 1
+    ;;
+esac
 
-TAG="latest"
-LFQI="${IMAGE}:${TAG}"
-RFQI2="${REPO}/${LFQI}"
-echo "$LFQI"
-echo "$RFQI2"
-docker tag "${RFQI}" "${RFQI2}"
-docker push "${RFQI2}"
+OLDTAG="${LFQI}"
+PUSHTAGS="${REPO}/${IMAGE}:${VERSION}${EXT}${TIMESTAMP} ${REPO}/${IMAGE}:latest ${REPO}/${IMAGE}:${VERSION2}${EXT}-latest"
+for NEWTAG in ${PUSHTAGS}
+do
+   echo "tagging ${OLDTAG} to ${NEWTAG}" 
+   docker tag "${OLDTAG}" "${NEWTAG}"
+   echo "pushing ${NEWTAG}" 
+   docker push "${NEWTAG}"
+   OLDTAG="${NEWTAG}"
+done
 
