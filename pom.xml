@@ -273,7 +273,7 @@
     <jersey.version>2.16</jersey.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jettyVersion>9.0.2.v20130417</jettyVersion>
-    <nexusproxy>https://nexus.openecomp.org</nexusproxy>
+    <nexusproxy>https://nexus.onap.org</nexusproxy>
   </properties>
   <description>Data Movement as a Platform (DMaaP) Bus Controller provides an API for other DCAE infrastructure components to provision DMaaP resources.  A DMaaP resource is a Data Router Feed or a Message Router Topic, and their associated publishers and subscribers.</description>
 </project>
