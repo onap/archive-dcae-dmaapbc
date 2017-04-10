@@ -18,7 +18,7 @@
     </snapshotRepository>
     <site>
       <id>ecomp-site</id>
-      <url>dav:${nexusproxy}/content/sites/site/org/openecomp/dcae/dmaapbc/${project.artifactId}/${project.version}/</url>
+      <url>dav:${nexusproxy}/content/sites/site/org/onap/dcae/dmaapbc/${project.artifactId}/${project.version}/</url>
     </site>
   </distributionManagement>
   <pluginRepositories>
