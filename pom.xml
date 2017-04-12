@@ -9,12 +9,12 @@
     <repository>
       <id>ecomp-releases</id>
       <name>Open eCOMP Release Repository</name>
-      <url>${nexusproxy}/content/repositories/releases/</url>
+      <url>${nexusproxy}/${releases.path}</url>
     </repository>
     <snapshotRepository>
       <id>ecomp-snapshots</id>
       <name>Open eCOMP Snapshot Repository</name>
-      <url>${nexusproxy}/content/repositories/snapshots/</url>
+      <url>${nexusproxy}/${snapshots.path}</url>
     </snapshotRepository>
     <site>
       <id>ecomp-site</id>
@@ -274,6 +274,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jettyVersion>9.0.2.v20130417</jettyVersion>
     <nexusproxy>https://nexus.onap.org</nexusproxy>
+    <snapshots.path>content/repositories/snapshots/</snapshots.path>
+    <releases.path>content/repositories/releases/</releases.path>
   </properties>
   <description>Data Movement as a Platform (DMaaP) Bus Controller provides an API for other DCAE infrastructure components to provision DMaaP resources.  A DMaaP resource is a Data Router Feed or a Message Router Topic, and their associated publishers and subscribers.</description>
 </project>
