@@ -21,43 +21,33 @@
 package org.openecomp.dmaapbc.service;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 
-
-
-
-
-
-
-
-
-
-
-
-
-import org.openecomp.dmaapbc.aaf.AndrewDecryptor;
+import org.openecomp.dmaapbc.aaf.AafDecrypt;
+//import org.openecomp.dmaapbc.aaf.AndrewDecryptor;
 import org.openecomp.dmaapbc.client.MrTopicConnection;
 import org.openecomp.dmaapbc.database.DatabaseClass;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.model.ApiError;
+import org.openecomp.dmaapbc.model.DmaapObject.DmaapObject_Status;
 import org.openecomp.dmaapbc.model.MR_Cluster;
 import org.openecomp.dmaapbc.model.MirrorMaker;
-import org.openecomp.dmaapbc.model.DmaapObject.DmaapObject_Status;
 import org.openecomp.dmaapbc.util.DmaapConfig;
 import org.openecomp.dmaapbc.util.RandomInteger;
 
-public class MirrorMakerService {
-	static final Logger logger = Logger.getLogger(MirrorMakerService.class);
+public class MirrorMakerService extends BaseLoggingClass {
 	
 	private Map<String, MirrorMaker> mirrors = DatabaseClass.getMirrorMakers();
 	private static MrTopicConnection prov;
+	private static AafDecrypt decryptor;
 	
 	public MirrorMakerService() {
 		super();
-		// TODO Auto-generated constructor stub
+		
+		decryptor = new AafDecrypt();
 	}
 
 	// will create a MM on MMagent if needed
@@ -66,34 +56,41 @@ public class MirrorMakerService {
 		logger.info( "updateMirrorMaker");
 		DmaapConfig p = (DmaapConfig)DmaapConfig.getConfig();
 		String provUser = p.getProperty("MM.ProvUserMechId");
-		String provUserPwd = AndrewDecryptor.valueOf(p.getProperty( "MM.ProvUserPwd", "notSet" ));
+		String provUserPwd = decryptor.decrypt(p.getProperty( "MM.ProvUserPwd", "notSet" ));
 		prov = new MrTopicConnection( provUser, provUserPwd );
-		MR_ClusterService clusters = new MR_ClusterService();
-		DmaapService dmaap = new DmaapService();
-		//TODO: this should find the cluster!!!!
+
+		String centralFqdn = p.getProperty("MR.CentralCname", "notSet");
 		
-		MR_Cluster central = clusters.getMr_ClusterByFQDN(mm.getTargetCluster());
-		if ( central != null ) {
-			prov.makeTopicConnection(central, dmaap.getBridgeAdminFqtn() );
+		DmaapService dmaap = new DmaapService();
+		MR_ClusterService clusters = new MR_ClusterService();
+	
+		// in 1610, MM should only exist for edge-to-central
+		//  we use a cname for the central MR cluster that is active, and provision on agent topic on that target
+		// but only send 1 message so MM Agents can read it relying on kafka delivery
+		for( MR_Cluster central: clusters.getCentralClusters() ) {
+			prov.makeTopicConnection(central, dmaap.getBridgeAdminFqtn(), centralFqdn  );
 			ApiError resp = prov.doPostMessage(mm.createMirrorMaker());
 			if ( ! resp.is2xx() ) {
-				//logger.error( "Unable to publish MR Bridge provisioning message. rc=" + resp.getCode()  + " msg=" + resp.getMessage());
-				logger.error( "Unable to publish create MM provisioning message. rc=" + resp.getCode()  + " msg=" + resp.getMessage());
+	
+				errorLogger.error( DmaapbcLogMessageEnum.MM_PUBLISH_ERROR, "create MM", Integer.toString(resp.getCode()), resp.getMessage());
 				mm.setStatus(DmaapObject_Status.INVALID);
 			} else {
-				prov.makeTopicConnection(central, dmaap.getBridgeAdminFqtn() );
+				prov.makeTopicConnection(central, dmaap.getBridgeAdminFqtn(), centralFqdn );
 				resp = prov.doPostMessage(mm.updateWhiteList());
 				if ( ! resp.is2xx()) {
-					logger.error( "Unable to publish MR Bridge provisioning message. rc=" + resp.getCode()  + " msg=" + resp.getMessage());
+					errorLogger.error( DmaapbcLogMessageEnum.MM_PUBLISH_ERROR,"MR Bridge", Integer.toString(resp.getCode()), resp.getMessage());
 					mm.setStatus(DmaapObject_Status.INVALID);
 				} else {
 					mm.setStatus(DmaapObject_Status.VALID);
 				}
 			}
+			
+			// we only want to send one message even if there are multiple central clusters
+			break;
 		
-		} else {
-			logger.warn( "target cluster " + mm.getTargetCluster() + " not found!");
-		}
+		} 
+		
+
 
 		mm.setLastMod();
 		return mirrors.put( mm.getMmName(), mm);

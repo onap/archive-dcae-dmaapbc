@@ -20,12 +20,14 @@
 
 package org.openecomp.dmaapbc.database;
 
-import org.apache.log4j.Logger;
+import com.att.eelf.configuration.EELFLogger;
+import com.att.eelf.configuration.EELFManager;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 
 public class DBException extends RuntimeException {
-	static final Logger logger = Logger.getLogger(DBException.class);
+	static final EELFLogger errorLogger = EELFManager.getInstance().getErrorLogger();
 	public DBException(Exception e) {
 		super(e);
-		logger.error("Database access problem " + e, e);
+		errorLogger.error(DmaapbcLogMessageEnum.DB_ACCESS_ERROR,  e.getMessage());
 	}
 }

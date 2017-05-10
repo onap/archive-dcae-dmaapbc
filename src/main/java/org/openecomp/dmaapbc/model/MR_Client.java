@@ -24,12 +24,11 @@ import java.util.Date;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.log4j.Logger;
+
 import org.openecomp.dmaapbc.database.DatabaseClass;
 
 @XmlRootElement
 public class MR_Client extends DmaapObject {
-	static final Logger logger = Logger.getLogger(MR_Client.class);
 
 	private String dcaeLocationName;
 	private	String	topicURL;
@@ -43,7 +42,7 @@ public class MR_Client extends DmaapObject {
 		this.mrClientId = DatabaseClass.getNextClientId();
 		this.lastMod = new Date();
 		this.setLastMod();
-		logger.debug( "MR_Client constructor " + this.lastMod );
+		debugLogger.debug( "MR_Client constructor " + this.lastMod );
 			
 	}
 	
@@ -65,7 +64,7 @@ public class MR_Client extends DmaapObject {
 		this.setStatus( DmaapObject_Status.NEW );
 		this.mrClientId = DatabaseClass.getNextClientId();
 		this.setLastMod();
-		logger.debug( "MR_Client constructor w initialization " + this.lastMod );
+		debugLogger.debug( "MR_Client constructor w initialization " + this.lastMod );
 	}
 
 	public String getDcaeLocationName() {

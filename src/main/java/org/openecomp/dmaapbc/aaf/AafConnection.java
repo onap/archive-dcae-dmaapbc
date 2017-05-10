@@ -37,16 +37,17 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.log4j.Logger;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.service.DmaapService;
 
 
-public class AafConnection {
+public class AafConnection extends BaseLoggingClass {
 
-	static final Logger logger = Logger.getLogger(AafConnection.class);
+
 	   
    
-	private String dmaapName;
+
 	private String aafCred;
 
 	
@@ -54,10 +55,6 @@ public class AafConnection {
 
 
 	public AafConnection( String cred ) {
-		dmaapName = new DmaapService().getDmaap().getDmaapName();
-		if ( dmaapName.length() < 1 ) {
-			logger.fatal( "Attempting to access AAF before dmaap object is set");
-		}
 		aafCred = cred;
 	}
 	
@@ -71,7 +68,7 @@ public class AafConnection {
 			logger.info( "successful connect to " + pURL );
 			return(true);
 		} catch (Exception e) {
-            logger.error("Unexpected error during openConnection of " + pURL );
+	        errorLogger.error(DmaapbcLogMessageEnum.HTTP_CONNECTION_ERROR,  pURL, e.getMessage() );
             e.printStackTrace();
             return(false);
         }
@@ -87,7 +84,7 @@ public class AafConnection {
 				sb.append( line );
 			}
 		} catch (IOException ex ) {
-			logger.error( "IOexception:" + ex);
+			errorLogger.error( DmaapbcLogMessageEnum.IO_EXCEPTION,  ex.getMessage());
 		}
 			
 		return sb.toString();
@@ -96,11 +93,10 @@ public class AafConnection {
 
 
 	public int postAaf( AafObject obj, String pURL ) {
-
+		logger.info( "entry: postAaf() to  " + pURL  );
 		String auth =  "Basic " + Base64.encodeBase64String(aafCred.getBytes());
 		int rc = -1;
-		// TODO Auto-generated method stub
-		logger.info( "entry: setPerm() "  );
+
 		
 		if ( ! makeConnection( pURL ) ) {
 			return rc;
@@ -139,16 +135,12 @@ public class AafConnection {
                  } catch (Exception e) {
                  }
             } catch ( SSLHandshakeException she ) {
-            	logger.error( "SSLHandshakeException from AAF URL " + pURL);
-            } catch ( UnknownHostException uhe ) {    	
-            	logger.error( "UnknownHostException from AAF for URL " + pURL );
-            	rc = 500;
-            	return rc;
-            }
+               	errorLogger.error( DmaapbcLogMessageEnum.SSL_HANDSHAKE_ERROR, pURL);
+            } 
 			try {
 				rc = uc.getResponseCode();
 			} catch ( SSLHandshakeException she ) {
-            	logger.error( "SSLHandshakeException from AAF URL " + pURL);
+				errorLogger.error( DmaapbcLogMessageEnum.SSL_HANDSHAKE_ERROR, pURL);
             	rc = 500;
             	return rc;
             }
@@ -184,6 +176,91 @@ public class AafConnection {
 				uc.disconnect();
 			} catch ( Exception e ) {}
 		}
+		//return responseBody;
+	
+		return rc;
+		
+	}
+	
+	public int delAaf(AafObject obj, String pURL) {
+		logger.info( "entry: delAaf() to  " + pURL  );
+		String auth =  "Basic " + Base64.encodeBase64String(aafCred.getBytes());
+		int rc = -1;
+
+		
+		if ( ! makeConnection( pURL ) ) {
+			return rc;
+		};
+		
+
+		byte[] postData = obj.getBytes();
+		//logger.info( "post fields=" + postData );  //byte isn't very readable
+		String responsemessage = null;
+		String responseBody = null;
+
+		try {
+			if (auth != null) {
+				uc.setRequestProperty("Authorization", auth);
+	        }
+			uc.setRequestMethod("DELETE");
+			uc.setRequestProperty("Content-Type", "application/json");
+			uc.setRequestProperty( "charset", "utf-8");
+			uc.setRequestProperty( "Content-Length", Integer.toString( postData.length ));
+			uc.setUseCaches(false);
+			uc.setDoOutput(true);
+			OutputStream os = null;
+
+			
+			try {
+                 uc.connect();
+                 os = uc.getOutputStream();
+                 os.write( postData );
+
+            } catch (ProtocolException pe) {
+                 // Rcvd error instead of 100-Continue
+                 try {
+                     // work around glitch in Java 1.7.0.21 and likely others
+                     // without this, Java will connect multiple times to the server to run the same request
+                     uc.setDoOutput(false);
+                 } catch (Exception e) {
+                 }
+            } catch ( SSLHandshakeException she ) {
+            	errorLogger.error( DmaapbcLogMessageEnum.SSL_HANDSHAKE_ERROR, pURL);
+            }
+			try {
+				rc = uc.getResponseCode();
+			} catch ( SSLHandshakeException she ) {
+				errorLogger.error( DmaapbcLogMessageEnum.SSL_HANDSHAKE_ERROR, pURL);
+            	rc = 500;
+            	return rc;
+            }
+			logger.info( "http response code:" + rc );
+            responsemessage = uc.getResponseMessage();
+            logger.info( "responsemessage=" + responsemessage );
+
+            if (responsemessage == null) {
+                 // work around for glitch in Java 1.7.0.21 and likely others
+                 // When Expect: 100 is set and a non-100 response is received, the response message is not set but the response code is
+                 String h0 = uc.getHeaderField(0);
+                 if (h0 != null) {
+                     int i = h0.indexOf(' ');
+                     int j = h0.indexOf(' ', i + 1);
+                     if (i != -1 && j != -1) {
+                         responsemessage = h0.substring(j + 1);
+                     }
+                 }
+            }
+            if ( rc >= 200 && rc < 300 ) {
+            	responseBody = bodyToString( uc.getInputStream() );
+            	logger.info( "responseBody=" + responseBody );
+            } else {
+            		logger.warn( "Unsuccessful response: " + responsemessage );
+            } 
+            
+		} catch (Exception e) {
+            System.err.println("Unable to read response  " );
+            e.printStackTrace();
+        }
 		//return responseBody;
 	
 		return rc;

@@ -20,6 +20,11 @@
 
 package org.openecomp.dmaapbc.resources;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -34,38 +39,40 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.log4j.Logger;
 import org.openecomp.dmaapbc.authentication.AuthenticationErrorException;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
+import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.BrTopic;
+import org.openecomp.dmaapbc.model.DcaeLocation;
+import org.openecomp.dmaapbc.model.Dmaap;
 import org.openecomp.dmaapbc.model.MirrorMaker;
 import org.openecomp.dmaapbc.service.ApiService;
 import org.openecomp.dmaapbc.service.MirrorMakerService;
 
 @Path("/bridge")
+@Api( value= "bridge", description = "Endpoint for retreiving MR Bridge metrics" )
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class BridgeResource {
-	
-	static final Logger logger = Logger.getLogger(BridgeResource.class);
+@Authorization
+public class BridgeResource extends BaseLoggingClass {
 	
 	private MirrorMakerService mmService = new MirrorMakerService();
 
 	@GET
+	@ApiOperation( value = "return BrTopic details", 
+	notes = "Returns array of  `BrTopic` objects.", 
+	response = BrTopic.class)
+@ApiResponses( value = {
+    @ApiResponse( code = 200, message = "Success", response = Dmaap.class),
+    @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+})
 	public Response	getBridgedTopics(@QueryParam("source") String source,
-						   			@QueryParam("target") String target,
-						   		 @Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth){
+						   			@QueryParam("target") String target){
 		ApiService check = new ApiService();
+
 		BrTopic brTopic = new BrTopic();
 		
-		try {
-			check.checkAuthorization( basicAuth, uriInfo.getPath(), "GET");
-		} catch ( AuthenticationErrorException ae ) {
-			return check.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return check.unavailable(); 
-		}
-
 		logger.info( "getBridgeTopics():" + " source=" + source + ", target=" + target);
 //		System.out.println("getBridgedTopics() " + "source=" + source + ", target=" + target );
 		if (source != null && target != null) {		// get topics between 2 bridged locations
@@ -95,17 +102,15 @@ public class BridgeResource {
 			
 			logger.info( "topicCount [all locations]: " + totCnt );
 			brTopic.setTopicCount(totCnt);
-//			System.out.println("BridgeResource() d.getBrSource()=" + d.getBrSource());
+
 		}
 		else {
-//			System.out.println("A source or target Parameter is missing");
-//			return Response.serverError().build();
+
 			logger.error( "source or target is missing");
-			return Response.status(Status.BAD_REQUEST)
-					.entity( "Either 2 locations or no location must be provided")
-					.build();
+			check.setCode(Status.BAD_REQUEST.getStatusCode());
+			check.setMessage("Either 2 locations or no location must be provided");
+			return check.error();
 		}
-		return Response.ok(brTopic).
-				build();
+		return check.success(brTopic);
 	}
 }

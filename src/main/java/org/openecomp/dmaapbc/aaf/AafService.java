@@ -23,14 +23,15 @@ package org.openecomp.dmaapbc.aaf;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.util.DmaapConfig;
 
-public class AafService {
+public class AafService extends BaseLoggingClass {
 	public enum ServiceType {
 		AAF_Admin,
 		AAF_TopicMgr
 	}
-	static final Logger logger = Logger.getLogger(AafService.class);
 	
 	private AafConnection aaf;
 	private ServiceType ctype;
@@ -40,6 +41,7 @@ public class AafService {
 		String mechIdProperty = null;
 		String pwdProperty = null;
 		DmaapConfig p = (DmaapConfig)DmaapConfig.getConfig();
+		AafDecrypt decryptor = new AafDecrypt();
 
 		if ( ctype == ServiceType.AAF_Admin ) {
 			 mechIdProperty = "aaf.AdminUser";
@@ -52,7 +54,23 @@ public class AafService {
 			return null;
 		}
 		String user = p.getProperty( mechIdProperty, "noMechId@domain.netset.com" );
-		String pwd = AndrewDecryptor.valueOf(p.getProperty( pwdProperty, "notSet" ));
+		//String dClass = p.getProperty( "AafDecryption.Class", "org.openecomp.dmaapbc.aaf.ClearDecrypt");
+		String pwd = "";
+		String encPwd = p.getProperty( pwdProperty, "notSet" );
+		//DecryptionInterface dec = null;
+		//try {
+		//	dec = (DecryptionInterface) (Class.forName(dClass).newInstance());	
+		//	dec.init( p.getProperty("CredentialCodecKeyfile", "LocalKey"));
+		//} catch (Exception ee ) {
+		//	errorLogger.error(DmaapbcLogMessageEnum.UNEXPECTED_CONDITION, "attempting to use " + dClass + " to decrypt " + encPwd );		
+		//}	
+		//try {		
+		//	pwd = dec.decrypt( encPwd );
+		//} catch( IOException io ) {
+		//	errorLogger.error(DmaapbcLogMessageEnum.DECRYPT_IO_ERROR, dClass, encPwd );
+		//} 
+		
+		pwd = decryptor.decrypt(encPwd);
 		
 		if ( wPwd ) {
 			return user + ":" + pwd;
@@ -66,6 +84,14 @@ public class AafService {
 	public AafService(ServiceType t ) {
 		DmaapConfig p = (DmaapConfig)DmaapConfig.getConfig();
 		aafURL = p.getProperty( "aaf.URL", "https://authentication.domain.netset.com:8095/proxy/");
+		initAafService( t );
+	}
+	public AafService( ServiceType t, String url ) {
+		aafURL = url;
+		initAafService( t );
+	}
+		
+	private void initAafService( ServiceType t ) {
 		ctype = t;
 		aaf = new AafConnection( getCred( true ) );
 	}
@@ -73,17 +99,14 @@ public class AafService {
 	public int addPerm(DmaapPerm perm) {
 
 		int rc = -1;
-		logger.info( "entry: setPerm() "  );
+		logger.info( "entry: addPerm() "  );
 		String pURL = aafURL + "authz/perm";
 		rc = aaf.postAaf( perm, pURL );
         switch( rc ) {
     	case 401:
-    		logger.fatal( "Service credentials (" + getCred( false ) + ") are not valid for AAF connection");
-    		break;
     	case 403:
-    		logger.fatal( "Service credentials (" + getCred( false ) + ") are not authorized for requested action");
-    		break;
-
+       		errorLogger.error(DmaapbcLogMessageEnum.AAF_CREDENTIAL_ERROR,  getCred( false ) );
+    		System.exit(1);
     	case 409:
     		logger.warn( "Perm already exists. Possible conflict.");
     		break;
@@ -101,16 +124,15 @@ public class AafService {
 	public int addGrant(DmaapGrant grant ) {
 
 		int rc = -1;
-		logger.info( "entry: setPerm() "  );
+		logger.info( "entry: addGrant() "  );
 
 		String pURL = aafURL + "authz/role/perm";
 		rc = aaf.postAaf( grant, pURL );
         switch( rc ) {
     	case 401:
-    		logger.fatal( "Service credentials (" + getCred( false ) + ") are not valid for AAF connection");
-    		break;
     	case 403:
-    		logger.fatal( "Service credentials (" + getCred( false ) + ") are not authorized for requested action");
+       		errorLogger.error(DmaapbcLogMessageEnum.AAF_CREDENTIAL_ERROR,  getCred( false ) );
+    		System.exit(1);
     		break;
 
     	case 409:
@@ -128,4 +150,31 @@ public class AafService {
 		return rc;
 	}
 
+	public int delGrant( DmaapGrant grant ) {
+		int rc = -1;
+		logger.info( "entry: delGrant() "  );
+
+		String pURL = aafURL + "authz/role/:" + grant.getRole() + "/perm";
+		rc = aaf.delAaf( grant, pURL );
+        switch( rc ) {
+    	case 401:
+       	case 403:
+     		errorLogger.error(DmaapbcLogMessageEnum.AAF_CREDENTIAL_ERROR,  getCred( false ) );
+    		System.exit(1);
+    		break;
+ 
+    	case 404:
+    		logger.warn( "Perm not found...ignore");
+    		break;
+ 		
+    	case 200:
+    		logger.info( "expected response" );
+    		break;
+       	default :
+    		logger.error( "Unexpected response: " + rc );
+    		break;
+        }
+		
+		return rc;
+	}
 }

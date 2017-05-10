@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.openecomp.dcae.dmaapbc</groupId>
   <artifactId>dcae_dmaapbc</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.1.0-SNAPSHOT</version>
   <name>dcae_dmaapbc</name>
   <distributionManagement>
     <repository>
@@ -14,7 +14,7 @@
     <snapshotRepository>
       <id>ecomp-snapshots</id>
       <name>Open eCOMP Snapshot Repository</name>
-      <url>${nexusproxy}/${snapshots.path}</url>
+	<url>${nexusproxy}/${snapshots.path}</url>
     </snapshotRepository>
     <site>
       <id>ecomp-site</id>
@@ -29,6 +29,14 @@
   </pluginRepositories>
   <build>
     <finalName>dcae_dmaapbc</finalName>
+    <resources>
+		<resource>
+			<directory>src/main/java/org/openecomp/dmaapbc/logging</directory>
+		</resource>
+		<resource>
+			<directory>src/main/resources</directory>
+		</resource>
+	</resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -99,52 +107,14 @@
           </execution>
         </executions>
       </plugin-->
-      <!-- license plugin -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>1.10</version>
-        <configuration>
-          <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
-          <processStartTag>============LICENSE_START=======================================================</processStartTag>
-          <processEndTag>============LICENSE_END=========================================================</processEndTag>
-          <sectionDelimiter>================================================================================</sectionDelimiter>
-          <licenseName>apache_v2</licenseName>
-          <inceptionYear>2017</inceptionYear>
-          <organizationName>AT&amp;T Intellectual Property. All rights reserved.</organizationName>
-          <projectName>OpenECOMP - org.openecomp.dmaapbc</projectName>
-          <canUpdateCopyright>true</canUpdateCopyright>
-          <canUpdateDescription>true</canUpdateDescription>
-          <canUpdateLicense>true</canUpdateLicense>
-          <emptyLineAfterHeader>true</emptyLineAfterHeader>
-        </configuration>
-        <executions>
-          <execution>
-            <id>first</id>
-            <goals>
-              <goal>update-file-header</goal>
-            </goals>
-            <phase>process-sources</phase>
-          </execution>
-        </executions>
-      </plugin>
+ 
+ 
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>sonar-maven-plugin</artifactId>
         <version>3.2</version>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <version>3.6</version>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.wagon</groupId>
-            <artifactId>wagon-webdav-jackrabbit</artifactId>
-            <version>2.10</version>
-          </dependency>
-        </dependencies>
-      </plugin>
+
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -156,6 +126,62 @@
           <stagingProfileId>176c31dfe190a</stagingProfileId>
         </configuration>
       </plugin>
+      <!--  reference: https://tech.homeaway.com/development/2016/06/02/generating-swagger-spec.html -->
+ 	<plugin>
+    <groupId>com.github.kongchen</groupId>
+    <artifactId>swagger-maven-plugin</artifactId>
+    <version>3.1.2</version>
+    <configuration>
+        <apiSources>
+            <apiSource>
+                <springmvc>false</springmvc>
+                <locations>
+                	org.openecomp.dmaapbc.resources
+                </locations>
+                <schemes>http,https</schemes>
+                <host>www.[host]:[port]</host>
+                <basePath>/v1</basePath>
+                <info>
+                    <title>DMaaP Bus Controller REST API</title>
+                    <version>1.1.0</version>
+                    <description>
+provides an API for OpenDCAE components which need to provision underlying DMaaP technologies (Data Router and Message Router). Primary clients for this API are anticipated to be the OpenDCAE Controller, OpenDCAE Orchestrator, OpenDCAE Inventory and the ECOMP Portal.
+
+Objects managed by DMaaP are deployed in a dcaeLocation which is a unique identifier for an OpenStack tenant for a dcaeLayer, opendcae-central (aka ecomp) or opendcae-local-ntc (aka edge).
+
+A dcaeEnvironment (e.g. FTL or prod) has a single DMaaP. A DMaaP is managed by a one or more stateless DMaaP Bus Controller(s), though Bus Controller relies on PGaaS for persistence. Each DMaaP has a single instance of Data Router, which has 1 or more DR_Nodes deployed at each dcaeLocation. DR Clients of type DR_Pub generally publish to a DR_Node that is local to its dcaeLocation. Routing for a Feed is determined by the dcaelocation of its DR_Sub clients.
+
+A DMaaP may have many Message Router instances. Each instance is deployed as an MR_Cluster. One MR_Cluster is deployed at each dcaeLocation. MR_Clients generally communicate to the MR_Cluster at the same dcaeLocation. Replication of messages between MR_Clusters is accomplished by MR Bridge, which is provioned by DMaaP Bus Controller based on Topic attributes.
+
+Therefore, the role of DMaaP Bus Controller is to support other DCAE infrastructure components to dynamically provision DMaaP services on behalf of DMaaP clients, and to assist in any management or discovery activity of its clients.
+
+A convention of this API is to return JSON responses per OpenStack style.
+                    </description>
+                    <termsOfService>
+                        http://www.apache.org/licenses/LICENSE-2.0
+                    </termsOfService>
+                    <contact>
+                        <url>http://www.onap.org</url>
+                    </contact>
+                    <license>
+                        <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+                        <name>Licensed under the Apache License, Version 2.0</name>
+                    </license>
+                </info>
+                <swaggerDirectory>target/generated-sources/</swaggerDirectory>
+            </apiSource>
+        </apiSources>
+    </configuration>
+    <executions>
+        <execution>
+            <phase>compile</phase>
+            <goals>
+                <goal>generate</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+ 
     </plugins>
     <pluginManagement>
       <plugins>
@@ -189,6 +215,7 @@
   </build>
   <dependencyManagement>
     <dependencies>
+ 
       <dependency>
         <groupId>org.glassfish.jersey</groupId>
         <artifactId>jersey-bom</artifactId>
@@ -199,6 +226,21 @@
     </dependencies>
   </dependencyManagement>
   <dependencies>
+        <dependency>
+        <groupId>io.swagger</groupId>
+        <artifactId>swagger-core</artifactId>
+        <version>1.5.13</version>
+      </dependency>
+      <dependency>
+        <groupId>io.swagger</groupId>
+        <artifactId>swagger-jersey2-jaxrs</artifactId>
+        <version>1.5.13</version>
+      </dependency>
+       <dependency>
+        <groupId>io.swagger</groupId>
+        <artifactId>swagger-annotations</artifactId>
+        <version>1.5.13</version>
+      </dependency>   
     <dependency>
       <groupId>org.glassfish.jersey.containers</groupId>
       <artifactId>jersey-container-servlet-core</artifactId>
@@ -248,6 +290,11 @@
       <artifactId>postgresql</artifactId>
       <version>9.4.1208.jre7</version>
     </dependency>
+  	<dependency>
+		<groupId>com.att.eelf</groupId> 
+		<artifactId>eelf-core</artifactId> 
+		<version>${eelf.version}</version> 
+	</dependency>
   </dependencies>
   <reporting>
     <plugins>
@@ -273,6 +320,7 @@
     <jersey.version>2.16</jersey.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jettyVersion>9.0.2.v20130417</jettyVersion>
+    <eelf.version>0.0.1</eelf.version>
     <nexusproxy>https://nexus.onap.org</nexusproxy>
     <snapshots.path>content/repositories/snapshots/</snapshots.path>
     <releases.path>content/repositories/releases/</releases.path>

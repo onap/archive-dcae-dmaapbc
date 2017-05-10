@@ -26,15 +26,16 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.log4j.Logger;
+
+
 import org.openecomp.dmaapbc.database.DatabaseClass;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
 import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.DcaeLocation;
 import org.openecomp.dmaapbc.model.MR_Cluster;
 import org.openecomp.dmaapbc.model.DmaapObject.DmaapObject_Status;
 
-public class MR_ClusterService {
-	static final Logger logger = Logger.getLogger(MR_ClusterService.class);
+public class MR_ClusterService extends BaseLoggingClass {
 
 	private Map<String, MR_Cluster> mr_clusters = DatabaseClass.getMr_clusters();
 	
@@ -64,6 +65,17 @@ public class MR_ClusterService {
 		}
 		return null;
 	}
+	
+	public List<MR_Cluster> getCentralClusters() {
+		DcaeLocationService locations = new DcaeLocationService();
+		List<MR_Cluster> result = new ArrayList<MR_Cluster>();
+		for( MR_Cluster c: mr_clusters.values() ) {
+			if ( locations.getDcaeLocation(c.getDcaeLocationName()).isCentral() ) {
+				result.add(c);
+			}
+		}
+		return result;
+	}	
 
 	public MR_Cluster addMr_Cluster( MR_Cluster cluster, ApiError apiError ) {
 		logger.info( "Entry: addMr_Cluster");

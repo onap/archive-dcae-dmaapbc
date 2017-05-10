@@ -29,18 +29,24 @@ import java.net.ConnectException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.UnknownHostException;
+
 import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
+import org.openecomp.dmaapbc.aaf.AafDecrypt;
+import org.openecomp.dmaapbc.aaf.AafService;
+import org.openecomp.dmaapbc.aaf.AafService.ServiceType;
+import org.openecomp.dmaapbc.aaf.DecryptionInterface;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
+import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.MR_Cluster;
 import org.openecomp.dmaapbc.model.Topic;
 import org.openecomp.dmaapbc.util.DmaapConfig;
 
-public class MrProvConnection {
-	static final Logger logger = Logger.getLogger(MrProvConnection.class);
-	   
-	   
+public class MrProvConnection extends BaseLoggingClass{
+	    
 	private String provURL;
 	
 	private HttpsURLConnection uc;
@@ -48,11 +54,28 @@ public class MrProvConnection {
 	
 	private String topicMgrCred;
 	
-
-
-	public MrProvConnection() {
+	private String getCred( ) {
+		String mechIdProperty = "aaf.TopicMgrUser";
+		String pwdProperty = "aaf.TopicMgrPassword";
 		DmaapConfig p = (DmaapConfig)DmaapConfig.getConfig();
-		topicMgrCred = p.getProperty("aaf.TopicMgrUser", "noIdSet") + ":" + p.getProperty("aaf.TopicMgrPassword", "noPwdSet" );
+
+		String user = p.getProperty( mechIdProperty, "noMechId@domain.netset.com" );
+
+		String pwd = "";
+		String encPwd = p.getProperty( pwdProperty, "notSet" );
+
+		AafDecrypt decryptor = new AafDecrypt();
+		pwd = decryptor.decrypt(encPwd);
+	
+		return user + ":" + pwd;
+		
+		
+		
+	}
+	
+	
+	public MrProvConnection( ) {
+		topicMgrCred =  getCred();
 
 	}
 	
@@ -94,13 +117,13 @@ public class MrProvConnection {
 				sb.append( line );
 			}
 		} catch (IOException ex ) {
-			logger.error( "IOexception:" + ex);
+			errorLogger.error( "IOexception:" + ex);
 		}
 			
 		return sb.toString();
 	}
 	
-	public String doPostTopic( Topic postTopic ) {
+	public String doPostTopic( Topic postTopic, ApiError err ) {
 		String auth =  "Basic " + Base64.encodeBase64String(topicMgrCred.getBytes());
 
 
@@ -136,16 +159,18 @@ public class MrProvConnection {
                  } catch (Exception e) {
                  }
             } catch ( UnknownHostException uhe ) {
-            	logger.error( "UnknownHostException: " + uhe.getMessage()  );
+            	errorLogger.error( DmaapbcLogMessageEnum.UNKNOWN_HOST_EXCEPTION , uhe.getMessage() , provURL );
             	return new String( "500: " + uhe.getMessage());
             }catch ( ConnectException ce ) {
-            	logger.error( "ConnectException: " + ce.getMessage()  );
+            	errorLogger.error( DmaapbcLogMessageEnum.HTTP_CONNECTION_EXCEPTION, provURL, ce.getMessage()  );
             	return new String( "500: " + ce.getMessage());
             }
 			rc = uc.getResponseCode();
 			logger.info( "http response code:" + rc );
+			err.setCode(rc);
             responsemessage = uc.getResponseMessage();
             logger.info( "responsemessage=" + responsemessage );
+            err.setMessage(responsemessage);
 
 
             if (responsemessage == null) {

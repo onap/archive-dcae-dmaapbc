@@ -29,12 +29,14 @@ import javax.ws.rs.core.Response.Status;
 import org.apache.log4j.Logger;
 import org.openecomp.dmaapbc.client.DrProvConnection;
 import org.openecomp.dmaapbc.database.DatabaseClass;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.DR_Pub;
 import org.openecomp.dmaapbc.model.DmaapObject.DmaapObject_Status;
 
-public class DR_PubService {
-	static final Logger logger = Logger.getLogger(DR_PubService.class);
+public class DR_PubService  extends BaseLoggingClass{
+	
 	private Map<String, DR_Pub> dr_pubs = DatabaseClass.getDr_pubs();
 	private DR_NodeService nodeService = new DR_NodeService();
 	private static DrProvConnection prov;
@@ -77,11 +79,11 @@ public class DR_PubService {
 	
 	private void addIngressRoute( DR_Pub pub, ApiError err ) {
 		
-		String nodePattern = nodeService.getNodePatternAtLocation( pub.getDcaeLocationName());
+		String nodePattern = nodeService.getNodePatternAtLocation( pub.getDcaeLocationName(), true );
 		if ( nodePattern != null && nodePattern.length() > 0 ) {
 			logger.info( "creating ingress rule: pub " + pub.getPubId() + " on feed " + pub.getFeedId() + " to " + nodePattern);
 			prov.makeIngressConnection( pub.getFeedId(), pub.getUsername(), "-", nodePattern);
-			int rc = prov.doIngressPost(err);
+			int rc = prov.doXgressPost(err);
 			logger.info( "rc=" + rc + " error code=" + err.getCode() );
 			
 			if ( rc != 200 ) {
@@ -94,7 +96,7 @@ public class DR_PubService {
 					break;
 				
 				default: 
-					logger.warn( "unable to create ingress rule for " + pub.getPubId() + " on feed " + pub.getFeedId() + " to " + nodePattern);
+					logger.info( DmaapbcLogMessageEnum.INGRESS_CREATE_ERROR, Integer.toString(rc),  pub.getPubId(), pub.getFeedId(), nodePattern);
 				}
 			}
 

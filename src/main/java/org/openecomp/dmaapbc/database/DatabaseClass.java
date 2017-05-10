@@ -23,7 +23,8 @@ package org.openecomp.dmaapbc.database;
 import java.util.*;
 import java.sql.*;
 
-import org.apache.log4j.Logger;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.model.DR_Node;
 import org.openecomp.dmaapbc.model.DR_Pub;
 import org.openecomp.dmaapbc.model.DR_Sub;
@@ -35,18 +36,14 @@ import org.openecomp.dmaapbc.model.MR_Cluster;
 import org.openecomp.dmaapbc.model.MirrorMaker;
 import org.openecomp.dmaapbc.model.ReplicationVector;
 import org.openecomp.dmaapbc.model.Topic;
-import org.openecomp.dmaapbc.service.DmaapService;
 import org.openecomp.dmaapbc.util.DmaapConfig;
 import org.openecomp.dmaapbc.util.Singleton;
-
 import org.openecomp.dmaapbc.model.*;
 
 
 
 
-public class DatabaseClass {
-	
-	static final Logger logger = Logger.getLogger(DatabaseClass.class);
+public class DatabaseClass extends BaseLoggingClass {
 	
 	private static Singleton<Dmaap> dmaap;
 	private static Map<String, DcaeLocation> dcaeLocations;
@@ -128,6 +125,22 @@ public class DatabaseClass {
 			ps.setString(index, sb.toString());
 		}
 	}
+	private static class TopicReplicationTypeHandler implements DBFieldHandler.SqlOp {
+		public Object get(ResultSet rs, int index) throws Exception {
+			int val = rs.getInt(index);
+
+			return (ReplicationType.valueOf(val));
+		}
+		public void set(PreparedStatement ps, int index, Object val) throws Exception {
+			if (val == null) {
+				ps.setInt(index, 0);
+				return;
+			}
+			@SuppressWarnings("unchecked")
+			ReplicationType rep = (ReplicationType) val;
+			ps.setInt(index, rep.getValue());
+		}	
+	}
 	public static Singleton<Dmaap> getDmaap() {
 		return dmaap;
 	}
@@ -170,15 +183,15 @@ public class DatabaseClass {
 
 	static {
 		try {
-		logger.info( "begin static initialization");
-		logger.info( "initializing dmaap" );
+		appLogger.info( "begin static initialization");
+		appLogger.info( "initializing dmaap" );
 		DmaapConfig p = (DmaapConfig)DmaapConfig.getConfig();
 		if ("true".equalsIgnoreCase(p.getProperty("UsePGSQL", "false"))) {
-			logger.info("Data from database");
+			appLogger.info("Data from database");
 			try {
 				LoadSchema.upgrade();
 			} catch (Exception e) {
-				logger.warn("Problem updating DB schema", e);
+				appLogger.warn("Problem updating DB schema", e);
 			}
 			try {
 				dmaap = new DBSingleton<Dmaap>(Dmaap.class, "dmaap");
@@ -189,16 +202,17 @@ public class DatabaseClass {
 				mr_clients = new DBMap<MR_Client>(MR_Client.class, "mr_client", "mr_client_id");
 				mr_clusters = new DBMap<MR_Cluster>(MR_Cluster.class, "mr_cluster", "dcae_location_name");
 				feeds = new DBMap<Feed>(Feed.class, "feed", "feed_id");
+				TableHandler.setSpecialCase("topic", "replication_case", new TopicReplicationTypeHandler());
 				topics = new DBMap<Topic>(Topic.class, "topic", "fqtn");
 				//TableHandler.setSpecialCase("mirror_maker", "vectors", new MirrorVectorHandler());
 				TableHandler.setSpecialCase("mirror_maker", "topics", new MirrorTopicsHandler());
 				mirrors = new DBMap<MirrorMaker>(MirrorMaker.class, "mirror_maker", "mm_name");
 			} catch (Exception e) {
-				logger.fatal("Error initializing database access " + e, e);
+				errorLogger.error("Error initializing database access " + e, e);
 				System.exit(1);
 			}
 		} else {
-			logger.info("Data from memory");
+			appLogger.info("Data from memory");
 			dmaap = new Singleton<Dmaap>() {
 				private Dmaap dmaap;
 				public void remove() {
@@ -240,15 +254,14 @@ public class DatabaseClass {
 
 			dmx = new Dmaap("0", "", "", "", "", "", "", "");
 			dmx.setDmaapName(p.getProperty("DmaapName"));
-			dmx.setDrProvUrl("https://" + p.getProperty("DR.provhost"));
-			dmx.setVersion("1");
-			dmx.setTopicNsRoot("org.openecomp.dcae.dmaap");
+			dmx.setDrProvUrl("https://" + p.getProperty("DR.provhost", "notSet"));
+			dmx.setTopicNsRoot(p.getProperty("topicNsRoot"));
 			dmx.setBridgeAdminTopic("DCAE_MM_AGENT");
 
-			(new DmaapService()).addDmaap(dmx);
+			dmaap.update(dmx);
 		}
 		} catch (Exception e) {
-			logger.error("Error loading database " + e, e);
+			errorLogger.error(DmaapbcLogMessageEnum.DB_UPDATE_ERROR, e.getMessage());
 		}
 	}
 	

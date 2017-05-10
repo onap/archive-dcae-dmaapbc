@@ -23,21 +23,14 @@ package org.openecomp.dmaapbc.model;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.apache.log4j.Logger;
-
 
 import org.json.simple.*;
 import org.json.simple.parser.*;
 import org.openecomp.dmaapbc.service.DmaapService;
-import org.openecomp.dmaapbc.util.RandomString;
 
 @XmlRootElement
 public class Feed extends DmaapObject {
-	static final Logger logger = Logger.getLogger(Feed.class);
-
 		
 		private String feedId;
 
@@ -276,4 +269,31 @@ public class Feed extends DmaapObject {
 			return ret;
 		}
 
+		@Override
+		public String toString() {
+			String rc = String.format ( "Feed: {feedId=%s feedName=%s feedVersion=%s feedDescription=%s owner=%s asprClassification=%s publishURL=%s subscriberURL=%s suspended=%s logURL=%s formatUuid=%s}",
+					feedId,
+					feedName,
+					feedVersion,
+					feedDescription,
+					owner,
+					asprClassification,
+					publishURL,
+					subscribeURL,
+					suspended,
+					logURL,
+					formatUuid
+
+		
+					);
+
+			for( DR_Pub pub: pubs) {
+				rc += "\n" + pub.toString();
+			}
+
+			for( DR_Sub sub: subs ) {
+				rc += "\n" + sub.toString();
+			}
+			return rc;
+		}
 }

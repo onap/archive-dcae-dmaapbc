@@ -20,6 +20,11 @@
 
 package org.openecomp.dmaapbc.resources;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,20 +32,17 @@ import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.log4j.Logger;
-import org.openecomp.dmaapbc.authentication.AuthenticationErrorException;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
 import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.DR_Pub;
 import org.openecomp.dmaapbc.model.Feed;
@@ -50,75 +52,65 @@ import org.openecomp.dmaapbc.service.FeedService;
 
 
 @Path("/dr_pubs")
+@Api( value= "dr_pubs", description = "Endpoint for a Data Router client that implements a Publisher" )
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class DR_PubResource extends ApiResource {
-	static final Logger logger = Logger.getLogger(DR_PubResource.class);
+@Authorization
+public class DR_PubResource extends BaseLoggingClass {
+
 	DR_PubService dr_pubService = new DR_PubService();
 	
 	@GET
-	public  List<DR_Pub> getDr_Pubs(@Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth) {
+	@ApiOperation( value = "return DR_Pub details", 
+	notes = "Returns array of  `DR_Pub` objects.  Add filter for feedId.", 
+	response = DR_Pub.class)
+	@ApiResponses( value = {
+	    @ApiResponse( code = 200, message = "Success", response = DR_Pub.class),
+	    @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+	})
+	public  Response getDr_Pubs() {
 		ApiService resp = new ApiService();
-		try {
-			resp.checkAuthorization( basicAuth, uriInfo.getPath(), "GET");
-		} catch ( AuthenticationErrorException ae ) {
-			return null; //resp.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return null; //resp.unavailable(); 
-		}
+
 		logger.info( "Entry: GET /dr_pubs");
-		return dr_pubService.getAllDr_Pubs();
+		List<DR_Pub> pubs = dr_pubService.getAllDr_Pubs();
+
+		GenericEntity<List<DR_Pub>> list = new GenericEntity<List<DR_Pub>>(pubs) {
+        };
+        return resp.success(list);
 	}
 	
 	@POST
-	public Response addDr_Pub( DR_Pub pub,
-			@Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth) {
+	@ApiOperation( value = "return DR_Pub details", 
+	notes = "create a DR Publisher in the specified environment.", 
+	response = DR_Pub.class)
+	@ApiResponses( value = {
+	    @ApiResponse( code = 200, message = "Success", response = DR_Pub.class),
+	    @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+	})
+	public Response addDr_Pub( 
+			DR_Pub pub
+			) {
 		ApiService resp = new ApiService();
-		try {
-			resp.checkAuthorization( basicAuth, uriInfo.getPath(), "POST");
-		} catch ( AuthenticationErrorException ae ) {
-			return resp.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return resp.unavailable(); 
-		}
+
 		logger.info( "Entry: POST /dr_pubs");
 		ApiError err = new ApiError();
 		try {
-			checkRequired( "feedId", pub.getFeedId(), "", err);
-			checkRequired( "dcaeLocationName", pub.getDcaeLocationName(), "", err);
+			resp.required( "feedId", pub.getFeedId(), "");
+			resp.required( "dcaeLocationName", pub.getDcaeLocationName(), "");
 		} catch ( RequiredFieldException rfe ) {
 			logger.debug( err.toString() );
-			return Response.status(Status.BAD_REQUEST).entity( err ).build();	
+			return resp.error();	
 		}
 
 		FeedService feeds = new FeedService();
 		Feed fnew = feeds.getFeed( pub.getFeedId(), err);
 		if ( fnew == null ) {
 			logger.info( "Specified feed " + pub.getFeedId() + " not known to Bus Controller");	
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();	
+			return resp.error();	
 		}
 
 		ArrayList<DR_Pub> pubs = fnew.getPubs();
 		logger.info( "num existing pubs before = " + pubs.size() );
-/*
-		DR_Pub pnew = new DR_Pub( pub.getDcaeLocationName());
-		pnew.setFeedId(pub.getFeedId());
-		pnew.setPubId(pub.getPubId());
-		String tmp = pub.getUsername();
-		if ( tmp != null ) {
-			pub.setUsername(tmp);
-		}
-		tmp = pub.getUserpwd();
-		if ( tmp != null ) {
-			pub.setUserpwd(tmp);
-		}
-		pnew.setNextPubId();
-*/
-		
 		
 		logger.info( "update feed");
 		pub.setNextPubId();
@@ -133,138 +125,117 @@ public class DR_PubResource extends ApiResource {
 		fnew = feeds.updateFeed( fnew, err );	
 		
 		if ( ! err.is2xx()) {	
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();			
+			return resp.error();			
 		}
 		pubs = fnew.getPubs();
 		logger.info( "num existing pubs after = " + pubs.size() );
 		
 		DR_Pub pnew = dr_pubService.getDr_Pub(pub.getPubId(), err);
-		return Response.status(Status.CREATED.getStatusCode())
-				.entity(pnew)
-				.build();
+		return resp.success(Status.CREATED.getStatusCode(), pnew);
 	}
 	
 	@PUT
+	@ApiOperation( value = "return DR_Pub details", 
+	notes = "update a DR Publisher in the specified environment.  Update a `DR_Pub` object by pubId", 
+	response = DR_Pub.class)
+	@ApiResponses( value = {
+	    @ApiResponse( code = 200, message = "Success", response = DR_Pub.class),
+	    @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+	})
 	@Path("/{pubId}")
-	public Response updateDr_Pub( @PathParam("pubId") String name, DR_Pub pub,
-			@Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth) {
+	public Response updateDr_Pub( 
+			@PathParam("pubId") String name, 
+			DR_Pub pub
+			) {
 		ApiService resp = new ApiService();
-		try {
-			resp.checkAuthorization( basicAuth, uriInfo.getPathSegments().get(0).getPath(), "PUT");
-		} catch ( AuthenticationErrorException ae ) {
-			return resp.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return resp.unavailable(); 
-		}
+
 		logger.info( "Entry: PUT /dr_pubs");
 		pub.setPubId(name);
 		DR_Pub res = dr_pubService.updateDr_Pub(pub);
-		return Response.ok()
-				.entity(res)
-				.build();
+		return resp.success(res);
 	}
 	
 	@DELETE
+	@ApiOperation( value = "return DR_Pub details", 
+	notes = "delete a DR Publisher in the specified environment. Delete a `DR_Pub` object by pubId", 
+	response = DR_Pub.class)
+	@ApiResponses( value = {
+	    @ApiResponse( code = 204, message = "Success", response = DR_Pub.class),
+	    @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+	})
 	@Path("/{pubId}")
-	public Response deleteDr_Pub( @PathParam("pubId") String id,
-			@Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth){
-		logger.info( "Entry: DELETE /dr_pubs");
+	public Response deleteDr_Pub( 
+			@PathParam("pubId") String id
+			){
+
 		ApiService resp = new ApiService();
+
 		try {
-			resp.checkAuthorization( basicAuth, uriInfo.getPathSegments().get(0).getPath(), "DELETE");
-		} catch ( AuthenticationErrorException ae ) {
-			return resp.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return resp.unavailable(); 
-		}
-		ApiError err = new ApiError();
-		try {
-			checkRequired( "feedId", id, "", err);
+			resp.required( "pubId", id, "");
 		} catch ( RequiredFieldException rfe ) {
-			logger.debug( err.toString() );
-			return Response.status(Status.BAD_REQUEST).entity( err ).build();	
+			return resp.error();
 		}
 
-		DR_Pub pub =  dr_pubService.getDr_Pub( id, err );
-		if ( ! err.is2xx()) {	
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();			
+		DR_Pub pub =  dr_pubService.getDr_Pub( id, resp.getErr() );
+		if ( ! resp.getErr().is2xx()) {	
+			return resp.error();					
 		}
 		FeedService feeds = new FeedService();
-		Feed fnew = feeds.getFeed( pub.getFeedId(), err);
+		Feed fnew = feeds.getFeed( pub.getFeedId(), resp.getErr() );
 		if ( fnew == null ) {
 			logger.info( "Specified feed " + pub.getFeedId() + " not known to Bus Controller");	
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();	
+			return resp.error();
 		}
 		ArrayList<DR_Pub> pubs = fnew.getPubs();
 		if ( pubs.size() == 1 ) {
-			err.setCode(Status.BAD_REQUEST.getStatusCode());
-			err.setMessage( "Can't delete the last publisher of a feed");
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();	
+			resp.setCode(Status.BAD_REQUEST.getStatusCode());
+			resp.setMessage( "Can't delete the last publisher of a feed");
+			return resp.error();	
 		}
-		Iterator<DR_Pub> i = pubs.iterator();
-		while( i.hasNext() ) {
+		
+		for( Iterator<DR_Pub> i = pubs.iterator(); i.hasNext(); ) {
 			DR_Pub listItem = i.next();
 			if ( listItem.getPubId().equals(id)) {
 				pubs.remove( listItem );
 			}
 		}
 		fnew.setPubs(pubs);
-		fnew = feeds.updateFeed( fnew, err );
-		if ( ! err.is2xx()) {	
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();			
+		fnew = feeds.updateFeed( fnew, resp.getErr() );
+		if ( ! resp.getErr().is2xx()) {	
+			return resp.error();			
 		}
 		
-		dr_pubService.removeDr_Pub(id, err);
-		if ( ! err.is2xx()) {	
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();			
+		dr_pubService.removeDr_Pub(id, resp.getErr() );
+		if ( ! resp.getErr().is2xx()) {	
+			return resp.error();		
 		}
-		return Response.status(Status.NO_CONTENT.getStatusCode())
-				.build();
+		return resp.success(Status.NO_CONTENT.getStatusCode(), null);
 	}
 
 	@GET
+	@ApiOperation( value = "return DR_Pub details", 
+	notes = "returns a DR Publisher in the specified environment. Gets a `DR_Pub` object by pubId", 
+	response = DR_Pub.class)
+	@ApiResponses( value = {
+	    @ApiResponse( code = 200, message = "Success", response = DR_Pub.class),
+	    @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+	})
 	@Path("/{pubId}")
-	public Response get( @PathParam("pubId") String id,
-			@Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth) {
+	public Response get( 
+			@PathParam("pubId") String id
+			) {
 		ApiService resp = new ApiService();
+
 		try {
-			resp.checkAuthorization( basicAuth, uriInfo.getPathSegments().get(0).getPath(), "GET");
-		} catch ( AuthenticationErrorException ae ) {
-			return resp.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return resp.unavailable(); 
-		}
-		ApiError err = new ApiError();
-		try {
-			checkRequired( "feedId", id, "", err);
+			resp.required( "feedId", id, "");
 		} catch ( RequiredFieldException rfe ) {
-			logger.debug( err.toString() );
-			return Response.status(Status.BAD_REQUEST).entity( err ).build();	
+			return resp.error();	
 		}
-		logger.info( "Entry: GET /dr_pubs");
-		DR_Pub pub =  dr_pubService.getDr_Pub( id, err );
-		if ( ! err.is2xx()) {	
-			return Response.status(err.getCode())
-					.entity( err )
-					.build();			
+
+		DR_Pub pub =  dr_pubService.getDr_Pub( id, resp.getErr() );
+		if ( ! resp.getErr().is2xx()) {	
+			resp.getErr();			
 		}
-		return Response.status(Status.OK.getStatusCode())
-				.entity(pub)
-				.build();
+		return resp.success(Status.OK.getStatusCode(), pub);
 	}
 }

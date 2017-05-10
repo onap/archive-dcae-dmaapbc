@@ -20,14 +20,18 @@
 
 package org.openecomp.dmaapbc.model;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+
 @XmlRootElement
-public abstract class DmaapObject {
+public abstract class DmaapObject extends BaseLoggingClass {
 	protected Date lastMod;
 	protected	DmaapObject_Status	status;
 	
@@ -65,4 +69,59 @@ public abstract class DmaapObject {
 		}
 		return false;
 	}
+	
+	/*
+	 * TODO: get this working so arrays and sub-class within an Object can be logged
+	 * 
+	public String toString() {
+			return classToString( this );
+	}
+	
+	private String classToString( Object obj ) {
+		Field[] fields = obj.getClass().getDeclaredFields();
+		StringBuilder res = new StringBuilder( "{");
+		boolean first = true;
+		for ( Field field: fields ) {
+			logger.info( field.getName() + " toString=" + field.toString() + " toGenericString=" + field.toGenericString());
+			if ( first ) {
+				first = false;
+			} else {
+				res.append( ", ");
+			}
+
+
+			field.setAccessible(true);  // avoid IllegalAccessException
+
+			
+			Class<?> t = field.getType();
+			
+			if ( t == String.class ) {
+				res.append( "\"" ).append( field.getName() ).append( "\": \"");
+	
+				try {
+					res.append(field.get(this));
+				} catch ( IllegalAccessException iae) {
+					res.append( "UNK(iae)");
+				} catch (IllegalArgumentException iae2 ) {
+					res.append( "UNK(iae2)");
+				} catch ( NullPointerException npe ) {
+					res.append( "UNK(npe)");
+				} catch ( ExceptionInInitializerError eie ) {
+					res.append( "UNK(eie)");
+				}
+				res.append( "\"");
+			} else if ( t == ArrayList.class ){
+				res.append( "[");
+				res.append( classToString( field ));
+				res.append( "]");
+				
+			}
+		}
+		res.append( "}");
+		return( res.toString());
+	
+		
+	}
+	*/
+	
 }

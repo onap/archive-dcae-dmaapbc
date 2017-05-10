@@ -27,15 +27,17 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.net.URL;
+
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLException;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
 import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.MR_Cluster;
 
-public class MrTopicConnection {
-	static final Logger logger = Logger.getLogger(MrTopicConnection.class);
+public class MrTopicConnection extends BaseLoggingClass  {
 	private String topicURL;
 	
 	private HttpsURLConnection uc;
@@ -50,11 +52,12 @@ public class MrTopicConnection {
 
 	}
 	
-	public boolean makeTopicConnection( MR_Cluster cluster, String topic ) {
-		logger.info( "connect to cluster: " + cluster.getFqdn() + " for topic: " + topic );
+	public boolean makeTopicConnection( MR_Cluster cluster, String topic, String overrideFqdn ) {
+		String fqdn = overrideFqdn != null ? overrideFqdn : cluster.getFqdn();
+		logger.info( "connect to cluster: " + fqdn + " for topic: " + topic );
 	
 
-		topicURL = cluster.getTopicProtocol() + "://" + cluster.getFqdn() + ":" + cluster.getTopicPort() + "/events/" + topic ;
+		topicURL = cluster.getTopicProtocol() + "://" + fqdn + ":" + cluster.getTopicPort() + "/events/" + topic ;
 
 		return makeConnection( topicURL );
 	}
@@ -85,7 +88,7 @@ public class MrTopicConnection {
 				sb.append( line );
 			}
 		} catch (IOException ex ) {
-			logger.error( "IOexception:" + ex);
+			errorLogger.error( "IOexception:" + ex);
 		}
 			
 		return sb.toString();
@@ -124,6 +127,11 @@ public class MrTopicConnection {
                      uc.setDoOutput(false);
                  } catch (Exception e) {
                  }
+            }  catch ( SSLException se ) {
+        		response.setCode(500);
+    			response.setMessage( se.getMessage());
+    			return response;
+            	
             }
 			response.setCode( uc.getResponseCode());
 			logger.info( "http response code:" + response.getCode());

@@ -21,14 +21,14 @@
 package org.openecomp.dmaapbc.model;
 
 import java.util.Date;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.log4j.Logger;
 
 
 @XmlRootElement
 public class MR_Cluster extends DmaapObject {
-	static final Logger logger = Logger.getLogger(MR_Cluster.class);
+
 	private String dcaeLocationName;
 	private String fqdn;
 	private String[] hosts;
@@ -49,7 +49,7 @@ public class MR_Cluster extends DmaapObject {
 		this.topicPort = defaultTopicPort;
 		this.lastMod = new Date();
 
-		logger.info( "MR_Cluster constructor " + this.lastMod );
+		debugLogger.debug( "MR_Cluster constructor " + this.lastMod );
 		
 	}
 	
@@ -65,7 +65,7 @@ public class MR_Cluster extends DmaapObject {
 		this.topicProtocol = defaultTopicProtocol;
 		this.topicPort = defaultTopicPort;
 
-		logger.info( "MR_Cluster constructor w initialization complete" + this.lastMod );
+		debugLogger.debug( "MR_Cluster constructor w initialization complete" + this.lastMod );
 	}
 
 	public String getDcaeLocationName() {
@@ -108,16 +108,21 @@ public class MR_Cluster extends DmaapObject {
 		this.topicPort = topicPort;
 	}
 
-	public String genTopicURL( String topic ) {
+
+
+	public String genTopicURL(String overideFqdn, String topic) {
+
 		StringBuilder str = new StringBuilder( topicProtocol );
 		str.append("://")
-			.append(fqdn)
+			.append( overideFqdn != null ? overideFqdn : fqdn)
 			.append(":")
 			.append(topicPort)
 			.append("/events/")
 			.append(topic);
 		
 		return str.toString();
+
+
 	}
 
 

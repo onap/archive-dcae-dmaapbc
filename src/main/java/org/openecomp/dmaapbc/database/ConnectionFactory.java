@@ -24,10 +24,20 @@ import java.sql.*;
 import java.util.*;
 
 import org.apache.log4j.Logger;
+import com.att.eelf.configuration.EELFLogger;
+import com.att.eelf.configuration.EELFManager;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.util.DmaapConfig;
 
 public class ConnectionFactory	{
-	static final Logger logger = Logger.getLogger(ConnectionFactory.class);
+	 static final EELFLogger logger = EELFManager.getInstance().getLogger( ConnectionFactory.class );
+	 static final EELFLogger appLogger = EELFManager.getInstance().getApplicationLogger();
+	 static final EELFLogger auditLogger = EELFManager.getInstance().getAuditLogger();
+	 static final EELFLogger debugLogger = EELFManager.getInstance().getDebugLogger();
+	 static final EELFLogger errorLogger = EELFManager.getInstance().getErrorLogger();
+	 static final EELFLogger metricsLogger = EELFManager.getInstance().getMetricsLogger();
+	 static final EELFLogger serverLogger = EELFManager.getInstance().getServerLogger();
+
 	static {
 		try {
 			Class.forName("org.postgresql.Driver");

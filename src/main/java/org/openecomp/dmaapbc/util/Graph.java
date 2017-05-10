@@ -20,6 +20,7 @@
 
 package org.openecomp.dmaapbc.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -39,20 +40,19 @@ public class Graph {
 	//TODO add to properties file
 	private static String centralDcaeLayerName = "central";
 
-	public Graph() {
-	}
+	
 	public Graph(HashMap<String, String> graph) {
 		super();
 		this.graph = graph;
 	}
 
-	public Graph( List<MR_Client> clients ) {
+	public Graph( List<MR_Client> clients, boolean strict ) {
 		if ( clients == null )
 			return;
 		this.graph = new HashMap<String, String>();
 		this.hasCentral = false;
 		for( MR_Client client: clients ) {
-			if ( client.isStatusValid()) {
+			if ( ! strict || client.isStatusValid()) {
 				String loc = client.getDcaeLocationName();
 				for( String action : client.getAction() ){
 					DcaeLocation dcaeLoc = locations.get(loc);

@@ -22,14 +22,17 @@ package org.openecomp.dmaapbc.service;
 
 import java.util.ArrayList;
 
-import org.apache.log4j.Logger;
+
 import org.openecomp.dmaapbc.aaf.AafService;
 import org.openecomp.dmaapbc.aaf.DmaapGrant;
 import org.openecomp.dmaapbc.aaf.DmaapPerm;
 import org.openecomp.dmaapbc.aaf.AafService.ServiceType;
+import org.openecomp.dmaapbc.authentication.ApiPerms;
 import org.openecomp.dmaapbc.database.DatabaseClass;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.model.ApiError;
-import org.openecomp.dmaapbc.model.DcaeLocation;
+
 import org.openecomp.dmaapbc.model.Dmaap;
 import org.openecomp.dmaapbc.model.MR_Client;
 import org.openecomp.dmaapbc.model.Topic;
@@ -37,8 +40,8 @@ import org.openecomp.dmaapbc.model.DmaapObject.DmaapObject_Status;
 import org.openecomp.dmaapbc.util.DmaapConfig;
 import org.openecomp.dmaapbc.util.Singleton;
 
-public class DmaapService {
-	static final Logger logger = Logger.getLogger(DmaapService.class);
+public class DmaapService  extends BaseLoggingClass  {
+
 	
 	private Singleton<Dmaap> dmaapholder = DatabaseClass.getDmaap();
 	
@@ -69,7 +72,8 @@ public class DmaapService {
 			dmaapholder.update(nd);
 
 			AafService aaf = new AafService( ServiceType.AAF_Admin);
-			
+			ApiPerms p = new ApiPerms();
+			p.setEnvMap();
 			boolean anythingWrong = setTopicMgtPerms(  nd,  aaf ) || createMmaTopic();
 					
 			if ( anythingWrong ) {
@@ -92,7 +96,7 @@ public class DmaapService {
 		logger.info( "entering updateDmaap()" );
 		
 		boolean anythingWrong = false;
-		AafService aaf = new AafService( ServiceType.AAF_Admin);
+
 		Dmaap dmaap = dmaapholder.get();
 		
 		// some triggers for when we attempt to reprovision perms and MMA topic:
@@ -102,6 +106,9 @@ public class DmaapService {
 		if ( ! dmaap.isStatusValid()  || ! nd.getDmaapName().equals(dmaap.getDmaapName()) || dmaap.getVersion().equals( "0") ) {
 			nd.setLastMod();
 			dmaapholder.update(nd);  //need to set this so the following perms will pick up any new vals.
+			ApiPerms p = new ApiPerms();
+			p.setEnvMap();
+			AafService aaf = new AafService( ServiceType.AAF_Admin);
 			anythingWrong = setTopicMgtPerms(  nd,  aaf ) || createMmaTopic();
 		}
 					
@@ -128,7 +135,14 @@ public class DmaapService {
 	
 	public String getBridgeAdminFqtn(){
 		Dmaap dmaap = dmaapholder.get();
-		return(dmaap.getTopicNsRoot() + "." + dmaap.getDmaapName() + "." + dmaap.getBridgeAdminTopic());
+		String topic = dmaap.getBridgeAdminTopic();
+		
+		// check if this is already an fqtn (contains a dot)
+		// otherwise build it
+		if ( topic.indexOf('.') < 0 ) {
+			topic = dmaap.getTopicNsRoot() + "." + dmaap.getDmaapName() + "." + dmaap.getBridgeAdminTopic();
+		}
+		return( topic );
 	}
 
 	private boolean setTopicMgtPerms( Dmaap nd, AafService aaf ){
@@ -164,14 +178,14 @@ public class DmaapService {
 		
 			int rc = aaf.addPerm( perm );
 			if ( rc != 201 &&  rc != 409 ) {
-				logger.error( "unable to add perm for "+ t + "|" + instance + "|" + action );
+				errorLogger.error( DmaapbcLogMessageEnum.AAF_UNEXPECTED_RESPONSE, Integer.toString(rc), "add perm", t + "|" + instance + "|" + action );
 				return true;
 			}
 
 			DmaapGrant grant = new DmaapGrant( perm, topicMgrRole );
 			rc = aaf.addGrant( grant );
 			if ( rc != 201 && rc != 409 ) {
-				logger.error( "unable to grant to " + topicMgrRole + " perm for "+ topicFactory + "|" + instance + "|" + action );
+				errorLogger.error( DmaapbcLogMessageEnum.AAF_UNEXPECTED_RESPONSE, Integer.toString(rc), "grant to " + topicMgrRole + " perm ", topicFactory + "|" + instance + "|" + action );
 				return true;
 			}
 				
@@ -221,11 +235,16 @@ public class DmaapService {
 		
 		ApiError err = new ApiError();
 		TopicService svc = new TopicService();
-		Topic nTopic = svc.addTopic(mmaTopic, err);
-		if ( err.is2xx() || err.getCode() == 409 ) {
-			return false;
+		try {
+			@SuppressWarnings("unused")
+			Topic nTopic = svc.addTopic(mmaTopic, err);
+			if ( err.is2xx() || err.getCode() == 409 ) {
+				return false;
+			}
+		} catch ( Exception e) {
+			errorLogger.error( DmaapbcLogMessageEnum.UNEXPECTED_CONDITION, " while adding Topic: " + e.getMessage());
 		}
-		logger.error( "Unable to create topic for " + dmaap.getBridgeAdminTopic() + " err=" + err.getFields() + " fields=" + err.getFields() + " msg=" + err.getMessage());
+		errorLogger.error( DmaapbcLogMessageEnum.TOPIC_CREATE_ERROR,  dmaap.getBridgeAdminTopic(), err.getFields(), err.getFields(), err.getMessage());
 		
 		return rc;
 		

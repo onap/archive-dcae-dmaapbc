@@ -21,99 +21,103 @@
 package org.openecomp.dmaapbc.resources;
 
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.log4j.Logger;
-
-
-
-import org.openecomp.dmaapbc.authentication.AuthenticationErrorException;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
 import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.DcaeLocation;
+import org.openecomp.dmaapbc.model.Dmaap;
 import org.openecomp.dmaapbc.service.ApiService;
 import org.openecomp.dmaapbc.service.DcaeLocationService;
 
 
 @Path("/dcaeLocations")
+@Api( value= "dcaeLocations", description = "an OpenStack tenant purposed for OpenDCAE (i.e. where OpenDCAE components might be deployed)" )
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class DcaeLocationResource {
+@Authorization
+public class DcaeLocationResource extends BaseLoggingClass {
 	static final Logger logger = Logger.getLogger(DcaeLocationResource.class);	
 	DcaeLocationService locationService = new DcaeLocationService();
 	
 	@GET
-	public List<DcaeLocation> getDcaeLocations( @Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth) {
+	@ApiOperation( value = "return dcaeLocation details", 
+		notes = "Returns array of  `dcaeLocation` objects.  All objects managed by DMaaP are deployed in some `dcaeLocation` which is a unique identifier for an *OpenStack* tenant purposed for a *dcaeLayer*  (ecomp or edge).", 
+		response = DcaeLocation.class)
+    @ApiResponses( value = {
+        @ApiResponse( code = 200, message = "Success", response = Dmaap.class),
+        @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+    })
+	public Response getDcaeLocations() {
 		ApiService check = new ApiService();
-		try {
-			check.checkAuthorization( basicAuth, uriInfo.getPath(), "GET");
-		} catch ( AuthenticationErrorException ae ) {
-			return null; //check.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return null; //check.unavailable(); 
-		}
-		return locationService.getAllDcaeLocations();
+
+		List<DcaeLocation> locs = locationService.getAllDcaeLocations();
+
+		GenericEntity<List<DcaeLocation>> list = new GenericEntity<List<DcaeLocation>>(locs) {
+        };
+        return check.success(list);
 	}
 	
 	@POST
-	public Response addDcaeLocation( DcaeLocation location,  
-			@Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth ) {
+	@ApiOperation( value = "return dcaeLocation details", 
+		notes = "Create some `dcaeLocation` which is a unique identifier for an *OpenStack* tenant purposed for a *dcaeLayer*  (ecomp or edge).", 
+		response = DcaeLocation.class)
+    @ApiResponses( value = {
+        @ApiResponse( code = 200, message = "Success", response = Dmaap.class),
+        @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+    })
+	public Response addDcaeLocation( 
+			DcaeLocation location 
+			) {
 		ApiService check = new ApiService();
-		try {
-			check.checkAuthorization( basicAuth, uriInfo.getPath(), "POST");
-		} catch ( AuthenticationErrorException ae ) {
-			return check.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return check.unavailable(); 
-		}
-		if ( locationService.getDcaeLocation(location.getDcaeLocationName()) != null ) {
-			ApiError err = new ApiError();
-				
-			err.setCode(Status.CONFLICT.getStatusCode());
-			err.setMessage("dcaeLocation already exists");
-			err.setFields("dcaeLocation");
-			
-			logger.warn( err );
-			return Response.status(Status.CONFLICT).entity( err ).build();
 
+		if ( locationService.getDcaeLocation(location.getDcaeLocationName()) != null ) {
+				
+			check.setCode(Status.CONFLICT.getStatusCode());
+			check.setMessage("dcaeLocation already exists");
+			check.setFields("dcaeLocation");
+			
+			return check.error();
 
 		}
 		DcaeLocation loc = locationService.addDcaeLocation(location);
-		return Response.status(Status.CREATED)
-				.entity(loc)
-				.build();
+		return check.success(Status.CREATED.getStatusCode(), loc);
 	}
 	
 	@PUT
+	@ApiOperation( value = "return dcaeLocation details", 
+		notes = "update the openStackAvailabilityZone of a dcaeLocation", 
+		response = DcaeLocation.class)
+    @ApiResponses( value = {
+        @ApiResponse( code = 200, message = "Success", response = Dmaap.class),
+        @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+    })
 	@Path("/{locationName}")
-	public Response updateDcaeLocation( @PathParam("locationName") String name, DcaeLocation location,
-			 @Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth) {
+	public Response updateDcaeLocation( 
+			@PathParam("locationName") String name, 
+			DcaeLocation location
+			 ) {
 		ApiService check = new ApiService();
-		try {
-			check.checkAuthorization( basicAuth, uriInfo.getPathSegments().get(0).getPath(), "PUT");
-		} catch ( AuthenticationErrorException ae ) {
-			return check.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return check.unavailable(); 
-		}
+
 		location.setDcaeLocationName(name);
 		if ( locationService.getDcaeLocation(location.getDcaeLocationName()) == null ) {
 			ApiError err = new ApiError();
@@ -122,48 +126,42 @@ public class DcaeLocationResource {
 			err.setMessage("dcaeLocation does not exist");
 			err.setFields("dcaeLocation");
 			
-			logger.warn( err );
-			return Response.status(Status.NOT_FOUND).entity( err ).build();
+			return check.notFound();
 
 
 		}
 		DcaeLocation loc = locationService.updateDcaeLocation(location);
-		return Response.status(Status.CREATED)
-				.entity(loc)
-				.build();
+		return check.success(Status.CREATED.getStatusCode(), loc );
 	}
 	
 	@DELETE
+	@ApiOperation( value = "return dcaeLocation details", notes = "delete a dcaeLocation", response = Dmaap.class)
+    @ApiResponses( value = {
+        @ApiResponse( code = 204, message = "Success", response = Dmaap.class),
+        @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+    })
 	@Path("/{locationName}")
-	public Response deleteDcaeLocation( @PathParam("locationName") String name,
-			 @Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth){
+	public Response deleteDcaeLocation( 
+			@PathParam("locationName") String name
+			 ){
 		ApiService check = new ApiService();
-		try {
-			check.checkAuthorization( basicAuth, uriInfo.getPathSegments().get(0).getPath(), "DELETE");
-		} catch ( AuthenticationErrorException ae ) {
-			return check.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return check.unavailable(); 
-		}
+
 		locationService.removeDcaeLocation(name);
-		return Response.status(Status.NO_CONTENT).build();
+		return check.success(Status.NO_CONTENT.getStatusCode(), null);
 	}
 
 	@GET
+	@ApiOperation( value = "return dcaeLocation details", notes = "Returns a specific `dcaeLocation` object with specified tag", response = Dmaap.class)
+    @ApiResponses( value = {
+        @ApiResponse( code = 200, message = "Success", response = Dmaap.class),
+        @ApiResponse( code = 400, message = "Error", response = ApiError.class )
+    })
 	@Path("/{locationName}")
-	public Response getDcaeLocation( @PathParam("locationName") String name,
-			 @Context UriInfo uriInfo, @HeaderParam("Authorization") String basicAuth) {
+	public Response getDcaeLocation( 
+			@PathParam("locationName") String name
+			 ) {
 		ApiService check = new ApiService();
-		try {		
-			//List<PathSegment> segments = uriInfo.getPathSegments();
-			check.checkAuthorization( basicAuth, uriInfo.getPathSegments().get(0).getPath(), "GET");
-		} catch ( AuthenticationErrorException ae ) {
-			return check.unauthorized();
-		} catch ( Exception e ) {
-			logger.error( "Unexpected exception " + e );
-			return check.unavailable(); 
-		}
+
 		DcaeLocation loc =  locationService.getDcaeLocation( name );
 		if ( loc == null ) {
 			ApiError err = new ApiError();
@@ -172,14 +170,11 @@ public class DcaeLocationResource {
 			err.setMessage("dcaeLocation does not exist");
 			err.setFields("dcaeLocation");
 			
-			logger.warn( err );
-			return Response.status(Status.NOT_FOUND).entity( err ).build();
+			return check.error();
 
 
 		}
 
-		return Response.status(Status.OK)
-				.entity(loc)
-				.build();
+		return check.success(loc);
 	}
 }

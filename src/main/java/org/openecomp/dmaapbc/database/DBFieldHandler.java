@@ -25,8 +25,14 @@ import java.sql.*;
 import java.util.*;
 import org.apache.log4j.Logger;
 
+import com.att.eelf.configuration.EELFLogger;
+import com.att.eelf.configuration.EELFManager;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
+
+
 public class DBFieldHandler	{
-	static final Logger logger = Logger.getLogger(DBFieldHandler.class);
+	static final EELFLogger errorLogger = EELFManager.getInstance().getErrorLogger();
+	
 	public static interface	SqlOp	{
 		public Object get(ResultSet rs, int index) throws Exception;
 		public void set(PreparedStatement ps, int index, Object value) throws Exception;
@@ -106,7 +112,7 @@ public class DBFieldHandler	{
 			try {
 				sqlset.invoke(ps, index, val);
 			} catch (Exception e) {
-				logger.error("Problem setting field " + index + " to " + val + " statement is " + ps);
+				errorLogger.error(DmaapbcLogMessageEnum.DB_FIELD_INIT_ERROR,  Integer.toString(index), val.toString(), ps.toString());
 				throw e;
 			}
 		}
@@ -126,7 +132,7 @@ public class DBFieldHandler	{
                         new SqlType("Short");
                         new SqlType("String");
                 } catch (Exception e) {
-                        logger.error("Problem initializing sql access methods " + e, e);
+                	errorLogger.error(DmaapbcLogMessageEnum.DB_ACCESS_INIT_ERROR,  e.getMessage() );
                 }
         }
 	private Method	objget;
@@ -177,7 +183,7 @@ public class DBFieldHandler	{
 		if (sqlop != null) {
 			return;
 		}
-		logger.error("No field handler for class " + c.getName() + " field " + fieldname + " index " + fieldnum + " type " + x.getName());
+		errorLogger.error(DmaapbcLogMessageEnum.DB_NO_FIELD_HANDLER,  c.getName(),  fieldname,  Integer.toString(fieldnum),  x.getName());
 	}
 	public static String fesc(String s) {
 		if (s == null) {

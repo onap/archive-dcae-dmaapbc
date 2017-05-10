@@ -29,14 +29,15 @@ import javax.ws.rs.core.Response.Status;
 import org.apache.log4j.Logger;
 import org.openecomp.dmaapbc.client.DrProvConnection;
 import org.openecomp.dmaapbc.database.DatabaseClass;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
 import org.openecomp.dmaapbc.model.ApiError;
 import org.openecomp.dmaapbc.model.DR_Pub;
 import org.openecomp.dmaapbc.model.DR_Sub;
 import org.openecomp.dmaapbc.model.Feed;
 import org.openecomp.dmaapbc.model.DmaapObject.DmaapObject_Status;
 
-public class FeedService {
-	static final Logger logger = Logger.getLogger(FeedService.class);
+public class FeedService  extends BaseLoggingClass {
+	
 	private Map<String, Feed> feeds = DatabaseClass.getFeeds();
 	private DR_PubService pubService = new DR_PubService();
 	private DR_SubService subService = new DR_SubService();
@@ -146,7 +147,7 @@ public class FeedService {
 		int rSize = reqPubs.size();
 		logger.info( "reqPubs size=" + rSize + " newPubs size=" + nSize );
 		if ( nSize != rSize ) {
-			logger.error( "Resulting set of publishers do not match requested set of publishers " + nSize + " vs " + rSize );
+			errorLogger.error( "Resulting set of publishers do not match requested set of publishers " + nSize + " vs " + rSize );
 			fnew.setStatus( DmaapObject_Status.INVALID);
 			return false;
 		}
@@ -160,7 +161,7 @@ public class FeedService {
 				reqPub.setFeedId(newPub.getFeedId());
 				reqPub.setStatus(DmaapObject_Status.VALID);
 				if ( reqPub.getDcaeLocationName() == null ) {
-					reqPub.setDcaeLocationName("dcaeLocationNotSpecified");
+					reqPub.setDcaeLocationName("notSpecified");
 				}
 				pubSvc.addDr_Pub( reqPub );
 			}

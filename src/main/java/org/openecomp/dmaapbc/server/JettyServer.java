@@ -39,15 +39,17 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
  
+import com.att.eelf.configuration.EELFLogger;
+import com.att.eelf.configuration.EELFManager;
+import org.openecomp.dmaapbc.database.LoadSchema;
+import org.openecomp.dmaapbc.logging.BaseLoggingClass;
 /**
  * A  Jetty server which supports:
  * 	- http and https (simultaneously for dev env)
  *  - REST API context
  *  - static html pages (for documentation).
  */
-public class JettyServer {
-	
-	static final Logger logger = Logger.getLogger(JettyServer.class);
+public class JettyServer extends BaseLoggingClass {
 
     public JettyServer( Properties params ) throws Exception {
 
@@ -55,8 +57,8 @@ public class JettyServer {
     	int httpPort = Integer.valueOf(params.getProperty("IntHttpPort", "80" ));
        	int sslPort = Integer.valueOf(params.getProperty("IntHttpsPort", "443" ));
        	boolean allowHttp = Boolean.valueOf(params.getProperty("HttpAllowed", "false"));
-    	logger.info( "port params: http=" + httpPort + " https=" + sslPort );
-    	logger.info( "allowHttp=" + allowHttp );
+    	serverLogger.info( "port params: http=" + httpPort + " https=" + sslPort );
+    	serverLogger.info( "allowHttp=" + allowHttp );
         
         // HTTP Server
 
@@ -105,9 +107,9 @@ public class JettyServer {
         	}
 		}
 		else {
-            logger.info("NOT starting sslConnector on port " +   sslPort + " for https");
+            serverLogger.info("NOT starting sslConnector on port " +   sslPort + " for https");
         	if ( allowHttp ) {
-            	logger.info("Starting httpConnector on port " + httpPort );
+            	serverLogger.info("Starting httpConnector on port " + httpPort );
         		server.setConnectors( new Connector[] { httpConnector });
 			} 
         } 
@@ -119,7 +121,8 @@ public class JettyServer {
 
         ServletHolder jerseyServlet = context.addServlet( org.glassfish.jersey.servlet.ServletContainer.class, "/webapi/*");
         jerseyServlet.setInitOrder(1);
-        jerseyServlet.setInitParameter("jersey.config.server.provider.packages", "org.openecomp.dmaapbc.resources" );    
+        jerseyServlet.setInitParameter("jersey.config.server.provider.packages", "org.openecomp.dmaapbc.resources" );   
+        jerseyServlet.setInitParameter("javax.ws.rs.Application", "org.openecomp.dmaapbc.server.ApplicationConfig" );
         
         // also serve up some static pages...
         ServletHolder staticServlet = context.addServlet(DefaultServlet.class,"/*");
@@ -128,13 +131,13 @@ public class JettyServer {
 
         try {
 
-            logger.info("Starting jetty server");
+            serverLogger.info("Starting jetty server");
         	server.start();
         	server.dumpStdErr();
             server.join();
         } catch ( Exception e ) {
-        	logger.error( "Exception " + e );
-        	logger.error( "possibly unable to use keystore " + keystore + " with passwords " + keystorePwd +  " and " + keyPwd );
+        	errorLogger.error( "Exception " + e );
+        	errorLogger.error( "possibly unable to use keystore " + keystore + " with passwords " + keystorePwd +  " and " + keyPwd );
         	//System.exit(1);
         } finally {
         	server.destroy();

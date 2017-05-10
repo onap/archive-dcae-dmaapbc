@@ -26,8 +26,7 @@ import org.apache.log4j.Logger;
 
 @XmlRootElement
 public class Dmaap extends DmaapObject {
-	static final Logger logger = Logger.getLogger(Dmaap.class);
-
+	
 	private String version;
 	private String topicNsRoot;
 	private String dmaapName;

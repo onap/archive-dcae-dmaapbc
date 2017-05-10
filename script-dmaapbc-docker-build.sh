@@ -66,6 +66,7 @@ SNAPSHOT|snapshot)
     ;;
 STAGING|staging)
     #REPO='nexus3.openecomp.org:10003'
+    #REPO='nexus3.openecomp.org:10004'
     REPO='nexus3.onap.org:10003'
     EXT="-STAGING"
     ;;

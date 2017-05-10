@@ -24,8 +24,18 @@ import java.io.*;
 import java.sql.*;
 import org.apache.log4j.Logger;
 
+import com.att.eelf.configuration.EELFLogger;
+import com.att.eelf.configuration.EELFManager;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
+
 public class LoadSchema	{
-	static Logger	logger = Logger.getLogger(LoadSchema.class);
+	private static final EELFLogger logger = EELFManager.getInstance().getLogger(LoadSchema.class);
+	private static final EELFLogger appLogger = EELFManager.getInstance().getApplicationLogger();
+	private static final EELFLogger auditLogger = EELFManager.getInstance().getAuditLogger();
+	private static final EELFLogger debugLogger = EELFManager.getInstance().getDebugLogger();
+	private static final EELFLogger errorLogger = EELFManager.getInstance().getErrorLogger();
+	private static final EELFLogger metricsLogger = EELFManager.getInstance().getMetricsLogger();
+	
 	static int getVer(Statement s) throws SQLException {
 		ResultSet rs = null;
 		try {

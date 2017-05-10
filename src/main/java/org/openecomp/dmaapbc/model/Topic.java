@@ -26,22 +26,20 @@ import java.util.Date;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.log4j.Logger;
 import org.openecomp.dmaapbc.service.DmaapService;
 
 
 @XmlRootElement
 public class Topic extends DmaapObject  {
-	static final Logger logger = Logger.getLogger(Topic.class);
 
 	private String fqtn;
 	private	String topicName;
 	private	String	topicDescription;
-	// I don't think this field is needed for this object.  Rather, it applies to each MR_Client
-	//private	String	dcaeLocationName;
 	private	String	tnxEnabled;
 	private	String	owner;
 	private String	formatUuid;
+	private ReplicationType	replicationCase;  
+	private String	globalMrURL;		// optional: URL of global MR to replicate to/from
 
 	private	ArrayList<MR_Client> clients;
 
@@ -52,7 +50,14 @@ public class Topic extends DmaapObject  {
 	//
 	// utility function to generate the FQTN of a topic
 	public static String genFqtn(  String name ) {
-		String ret = dmaap.getTopicNsRoot() + "." + dmaap.getDmaapName() + "." + name;
+		CharSequence signal = ".";
+		String ret;
+		if ( name.contains( signal )) {
+			// presence of a dot indicates the name is already fully qualified
+			ret = name;
+		} else {
+			ret = dmaap.getTopicNsRoot() + "." + dmaap.getDmaapName() + "." + name;
+		}
 		return ret;
 	}
 
@@ -62,8 +67,9 @@ public class Topic extends DmaapObject  {
 		super();
 		this.clients = new ArrayList<MR_Client>();
 		this.lastMod = new Date();
+		this.replicationCase = ReplicationType.Validator("none");
 		this.setLastMod();
-		logger.info( "Topic constructor " + this.lastMod );
+		logger.debug( "Topic constructor " + this.lastMod );
 	}
 	public Topic(String fqtn, String topicName, String topicDescription,
 			 String tnxEnabled, String owner) {
@@ -76,7 +82,8 @@ public class Topic extends DmaapObject  {
 		this.owner = owner;
 		this.setLastMod();
 		this.setStatus( DmaapObject_Status.NEW );
-		logger.info( "Topic constructor " + this.getLastMod() );
+		this.replicationCase = ReplicationType.Validator("none");
+		logger.debug( "Topic constructor " + this.getLastMod() );
 	}
 	public String getFqtn() {
 		return fqtn;
@@ -96,14 +103,7 @@ public class Topic extends DmaapObject  {
 	public void setTopicDescription(String topicDescription) {
 		this.topicDescription = topicDescription;
 	}
-	/*
-	public String getDcaeLocationName() {
-		return dcaeLocationName;
-	}
-	public void setDcaeLocationName(String dcaeLocationName) {
-		this.dcaeLocationName = dcaeLocationName;
-	}
-	*/
+
 	public String getTnxEnabled() {
 		return tnxEnabled;
 	}
@@ -144,6 +144,34 @@ public class Topic extends DmaapObject  {
 
 	public void setFormatUuid(String formatUuid) {
 		this.formatUuid = formatUuid;
+	}
+
+
+	public ReplicationType getReplicationCase() {
+		return replicationCase;
+	}
+
+
+
+	/*
+	public void setReplicationCase(String val) {
+		this.replicationCase = ReplicationType.Validator(val);
+	}
+	*/
+	
+	public void setReplicationCase(ReplicationType t) {
+		this.replicationCase = t;
+	}
+
+
+	public String getGlobalMrURL() {
+		return globalMrURL;
+	}
+
+
+
+	public void setGlobalMrURL(String globalMrURL) {
+		this.globalMrURL = globalMrURL;
 	}
 
 

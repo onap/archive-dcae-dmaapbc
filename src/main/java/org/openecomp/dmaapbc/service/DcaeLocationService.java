@@ -82,5 +82,13 @@ public class DcaeLocationService {
 		}
 		return "aCentralLocation";  // default value that is obvious to see is wrong
 	}	
+	
+	public boolean isEdgeLocation(String aName) {
+		DcaeLocation loc = dcaeLocations.get(aName);
+		if ( ! loc.isCentral() ) {
+				return true;
+		}
+		return false;
+	}	
 
 }

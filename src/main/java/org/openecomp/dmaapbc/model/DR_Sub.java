@@ -24,14 +24,13 @@ import java.nio.charset.StandardCharsets;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 
 @XmlRootElement
 public class DR_Sub extends DmaapObject {
-	static final Logger logger = Logger.getLogger(DR_Sub.class);
 
 	private String dcaeLocationName;
 	private String username;
@@ -100,7 +99,7 @@ public class DR_Sub extends DmaapObject {
 		try {
 			jsonObj = (JSONObject) parser.parse( json );
 		} catch ( ParseException pe ) {
-            logger.error( "Error parsing provisioning data: " + json );
+			errorLogger.error( DmaapbcLogMessageEnum.JSON_PARSING_ERROR, "DR_Sub", json );
             this.setStatus( DmaapObject_Status.INVALID );
             return;
         }
@@ -194,13 +193,40 @@ public class DR_Sub extends DmaapObject {
 		// in DR 3.0, API v2.1 a new groupid field is added.  We are not using this required field so just set it to 0.
 		// we send this regardless of DR Release because older versions of DR seem to safely ignore it
 		// and soon those versions won't be around anyway...
-		String postJSON = String.format("{\"delivery\": {\"url\": \"%s\", \"user\": \"%s\", \"password\": \"%s\", \"use100\":  \"%s\"}, \"metadataOnly\": false, \"groupid\": \"0\"}", 
+		// Similarly, in the 1704 Release, a new subscriber attribute "follow_redirect" was introduced.
+		// We are setting it to "true" because that is the general behavior desired in OpenDCAE.
+		// But it is really a no-op for OpenDCAE because we've deployed DR with the SYSTEM-level parameter for FOLLOW_REDIRECTS set to true.
+		// In the event we abandon that, then setting the sub attribute to true will be a good thing.
+		// TODO:
+		//   - introduce Bus Controller API support for these attributes
+		//   - store the default values in the DB
+		String postJSON = String.format("{\"delivery\": {\"url\": \"%s\", \"user\": \"%s\", \"password\": \"%s\", \"use100\":  \"%s\"}, \"metadataOnly\": %s, \"groupid\": \"%s\", \"follow_redirect\": %s }", 
 				this.getDeliveryURL(), 
 				this.getUsername(),
 				this.getUserpwd(),
-				this.isUse100() );	
+				this.isUse100(),
+				"false",
+				"0",
+				"true");	
 		
 		logger.info( postJSON );
 		return postJSON;
+	}
+	
+	@Override
+	public String toString() {
+		String rc = String.format ( "DR_Sub: {dcaeLocationName=%s username=%s userpwd=%s feedId=%s deliveryURL=%s logURL=%s subid=%s use100=%s suspended=%s owner=%s}",
+				dcaeLocationName,
+				username,
+				userpwd,
+				feedId,
+				deliveryURL,
+				logURL,
+				subId,
+				use100,
+				suspended,
+				owner
+				);
+		return rc;
 	}
 }

@@ -19,13 +19,9 @@
  */
 
 package org.openecomp.dmaapbc.model;
-import org.apache.log4j.Logger;
 
 public class ReplicationVector {
 	
-
-
-	static final Logger logger = Logger.getLogger(ReplicationVector.class);
 	public enum ReplicationVector_Status {
 		EMPTY,
 		NEW,

@@ -22,12 +22,11 @@ package org.openecomp.dmaapbc.model;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.log4j.Logger;
 import org.openecomp.dmaapbc.util.RandomString;
 
 @XmlRootElement
 public class DR_Pub extends DmaapObject {
-	static final Logger logger = Logger.getLogger(DR_Pub.class);
+
 	private String dcaeLocationName;
 	private String username;
 	private String userpwd;

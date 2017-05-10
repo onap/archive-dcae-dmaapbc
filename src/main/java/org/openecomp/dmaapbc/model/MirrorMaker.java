@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openecomp.dmaapbc.logging.DmaapbcLogMessageEnum;
 import org.openecomp.dmaapbc.service.MirrorMakerService;
 
 public class MirrorMaker extends DmaapObject {
@@ -63,7 +64,7 @@ public class MirrorMaker extends DmaapObject {
 	public void addVector( String fqtn, String source, String target ) {
 		logger.info( "addVector: fqtn=" + fqtn + " source=" + source + " target=" + target );
 		if ( ! sourceCluster.equals( source ) ){
-			logger.error( "trying to add edge from source " + source + " into Map belonging to " + sourceCluster );
+			errorLogger.error( DmaapbcLogMessageEnum.MM_CIRCULAR_REF,  source,  sourceCluster );
 		}
 		vectors.add(new ReplicationVector( fqtn, source, target ));
 	}
